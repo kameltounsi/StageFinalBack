@@ -1,0 +1,119 @@
+package com.esprit.stageback.controllers;
+
+
+
+import com.esprit.stageback.dto.*;
+import com.esprit.stageback.entities.Roles;
+import com.esprit.stageback.entities.User;
+import com.esprit.stageback.repositories.UserRepository;
+import com.esprit.stageback.services.AuthService;
+import com.esprit.stageback.services.CloudinaryService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import com.esprit.stageback.config.JwtService;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/auth")
+@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
+public class AuthController {
+    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthService authService, CloudinaryService cloudinaryService) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
+        this.authService = authService;
+        this.cloudinaryService = cloudinaryService;
+    }
+    private final UserRepository userRepository; // ✅ Ajouté
+    private final PasswordEncoder passwordEncoder; // ✅ Ajouté
+    private final JwtService jwtService;
+    private final AuthService authService;
+    private final CloudinaryService cloudinaryService;
+    /* @PostMapping("/register")
+     public ResponseEntity<?> registerUser(@RequestParam("fullname") String fullname,
+                                           @RequestParam("email") String email,
+                                           @RequestParam("password") String password,
+                                           @RequestParam("image") MultipartFile image) {
+         // ⬆️ Uploader sur Cloudinary
+         String imageUrl = cloudinaryService.uploadFile(image);
+
+         // 🛠️ Construction de l'utilisateur
+         User newUser = User.builder()
+                 .fullName(fullname)
+                 .email(email)
+                 .password(passwordEncoder.encode(password))
+                 .profilePicture(imageUrl)
+                 .role(Roles.USER)
+                 .build();
+
+         // 💾 Enregistrement
+         userRepository.save(newUser);
+
+         return ResponseEntity.ok("User registered successfully");
+     }*/
+    @PostMapping("/register")
+    public ResponseEntity<Map<String, String>> registerUser(
+            @RequestParam("fullname") String fullname,
+            @RequestParam("email") String email,
+            @RequestParam("password") String password,
+            @RequestParam("company") String company, // ✅ Nouveau champ
+            @RequestParam("image") MultipartFile image) {
+
+        // 📤 Upload de l'image sur Cloudinary
+        String imageUrl = cloudinaryService.uploadFile(image);
+
+        // 🛠️ Construction du nouvel utilisateur
+        User newUser = User.builder()
+                .fullName(fullname)
+                .email(email)
+                .password(passwordEncoder.encode(password))
+                .profilePicture(imageUrl)
+                .role(Roles.USER)
+                .company(company) // ✅ Ajout de l'entreprise
+                .build();
+
+        // 💾 Sauvegarde en base de données
+        userRepository.save(newUser);
+
+        // 🔁 Réponse propre
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "User registered successfully");
+        return ResponseEntity.ok(response);
+    }
+
+
+
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+        AuthResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+
+
+    @GetMapping("/check")
+    public ResponseEntity<Boolean> checkAuthentication(@RequestHeader("Authorization") String tokenHeader) {
+        try {
+            String token = tokenHeader.replace("Bearer ", "");
+            System.out.println("Token received: " + token); // Debug log
+            String email = jwtService.extractEmail(token);
+            System.out.println("Extracted email: " + email); // Debug log
+            return ResponseEntity.ok(email != null);
+        } catch (Exception e) {
+            System.out.println("Token validation failed: " + e.getMessage()); // Debug log
+            return ResponseEntity.ok(false);
+        }
+    }
+    /*
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        return authService.sendVerificationCode(email);
+    }*/
+
+}

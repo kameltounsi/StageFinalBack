@@ -1,5 +1,6 @@
 package com.esprit.stageback.controllers;
 
+import com.esprit.stageback.dto.ForgotPasswordRequest;
 import com.esprit.stageback.entities.User;
 import com.esprit.stageback.entities.VerificationStatus;
 import com.esprit.stageback.repositories.UserRepository;
@@ -21,7 +22,7 @@ public class PasswordResetController {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
-
+/*
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestParam String email) {
         System.out.println("📩 Email reçu : '" + email + "'");
@@ -37,6 +38,24 @@ public class PasswordResetController {
 
         return ResponseEntity.ok("Code sent");
     }
+*/
+@PostMapping("/forgot-password")
+public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+    String email = request.getEmail();
+    System.out.println("📩 Email reçu : '" + email + "'");
+
+    User user = userRepository.findByEmailIgnoreCase(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    String code = String.format("%04d", new Random().nextInt(10000));
+    user.setResetCode(code);
+    user.setVerificationStatus(VerificationStatus.PENDING);
+    userRepository.save(user);
+
+    emailService.sendResetCode(email, code);
+
+    return ResponseEntity.ok("Code sent");
+}
 
     @PostMapping("/verify-code")
     public ResponseEntity<?> verifyCode(@RequestParam String email, @RequestParam String code) {

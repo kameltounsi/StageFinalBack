@@ -27,7 +27,20 @@ public class User {
     private String password;
 
     private String profilePicture; // Optional
-    private String company;
+    @OneToMany(mappedBy = "formateur")
+    private List<EmploiTemps> emploisDuTemps;
+
+    @OneToMany(mappedBy = "formateur")
+    private List<Cours> coursDonnes;
+
+    @OneToMany(mappedBy = "etudiant")
+    private List<Note> notes;
+
+    @OneToMany(mappedBy = "etudiant")
+    private List<Presence> presences;
+
+    @ManyToMany
+    private List<Groupe> groupes;
 
     @Enumerated(EnumType.STRING)
     private Roles role;

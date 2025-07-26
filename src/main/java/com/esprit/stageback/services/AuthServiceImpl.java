@@ -35,7 +35,7 @@ public class AuthServiceImpl implements AuthService{
                 .fullName(request.getFullName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Roles.USER) // default role
+                .role(Roles.STUDENT) // default role
                 .build();
         userRepository.save(user);
         String jwt = jwtService.generateToken(user);

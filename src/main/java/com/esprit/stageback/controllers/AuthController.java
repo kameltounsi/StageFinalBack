@@ -60,7 +60,6 @@ public class AuthController {
             @RequestParam("fullname") String fullname,
             @RequestParam("email") String email,
             @RequestParam("password") String password,
-            @RequestParam("company") String company, // ✅ Nouveau champ
             @RequestParam("image") MultipartFile image) {
 
         // 📤 Upload de l'image sur Cloudinary
@@ -72,8 +71,7 @@ public class AuthController {
                 .email(email)
                 .password(passwordEncoder.encode(password))
                 .profilePicture(imageUrl)
-                .role(Roles.USER)
-                .company(company) // ✅ Ajout de l'entreprise
+                .role(Roles.STUDENT)
                 .build();
 
         // 💾 Sauvegarde en base de données
@@ -109,11 +107,5 @@ public class AuthController {
             return ResponseEntity.ok(false);
         }
     }
-    /*
-    @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        return authService.sendVerificationCode(email);
-    }*/
 
 }

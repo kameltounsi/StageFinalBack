@@ -10,11 +10,13 @@ import com.esprit.stageback.services.AuthService;
 import com.esprit.stageback.services.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import com.esprit.stageback.config.JwtService;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -106,6 +108,35 @@ public class AuthController {
             System.out.println("Token validation failed: " + e.getMessage()); // Debug log
             return ResponseEntity.ok(false);
         }
+    }
+   // @PreAuthorize("hasRole('ADMIN')")
+   @PreAuthorize("permitAll()")
+
+   @GetMapping("/all")
+    public ResponseEntity<List<User>> getAllUsers() {
+        return ResponseEntity.ok(userRepository.findAll());
+    }
+    /*
+    @PutMapping("/{id}/role")
+    public ResponseEntity<?> updateUserRole(@PathVariable Long id, @RequestParam String role) {
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setRole(Roles.valueOf(role.toUpperCase()));
+        userRepository.save(user);
+        return ResponseEntity.ok("Role updated successfully");
+    }*/
+
+    @PutMapping("/{id}/role")
+    public ResponseEntity<?> updateUserRole(@PathVariable Long id, @RequestParam String role) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setRole(Roles.valueOf(role.toUpperCase()));
+        userRepository.save(user);
+
+        // ✅ Return JSON response instead of raw String
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Role updated successfully");
+        return ResponseEntity.ok(response);
     }
 
 }

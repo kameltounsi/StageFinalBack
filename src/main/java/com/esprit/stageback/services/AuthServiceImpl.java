@@ -71,29 +71,4 @@ public class AuthServiceImpl implements AuthService{
         userRepository.save(user);
         return ResponseEntity.ok().build();
     }
-    /*
-    @Autowired
-    private JavaMailSender mailSender;
-
-    private final Map<String, String> verificationCodes = new HashMap<>();
-
-    public ResponseEntity<?> sendVerificationCode(String email) {
-        Optional<User> userOpt = userRepository.findByEmail(email);
-        if (userOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Email not found");
-        }
-
-        String code = String.format("%04d", new Random().nextInt(10000));
-        verificationCodes.put(email, code);
-
-        // send email
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("Your verification code");
-        message.setText("Your password reset code is: " + code);
-        mailSender.send(message);
-
-        return ResponseEntity.ok("Verification code sent");
-    }
-*/
 }

@@ -1,5 +1,6 @@
 package com.esprit.stageback.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -23,6 +24,8 @@ public class EmploiTemps {
     private String salle;
 
     @ManyToOne
+    @JsonIgnore
+
     private User formateur;
 
     @ManyToOne

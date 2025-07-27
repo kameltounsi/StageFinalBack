@@ -25,12 +25,13 @@ public class JwtService {
     public String generateToken(User user) {
         return Jwts.builder()
                 .setSubject(user.getEmail())
-                .claim("role", user.getRole().name())
+                .claim("role", "ROLE_" + user.getRole().name())  // ✅ Ajout correct du rôle
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 86400000))
-                .signWith(getSignKey(), SignatureAlgorithm.HS256)  // ✅ FIXED
+                .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 1 jour
+                .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
 
     public String extractEmail(String token) {
         return Jwts.parserBuilder()

@@ -1,4 +1,5 @@
 package com.esprit.stageback.entities;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,8 +21,10 @@ public class Groupe {
     private String nom;
 
     @ManyToMany(mappedBy = "groupes")
+    @JsonIgnore
     private List<User> etudiants;
 
     @OneToMany(mappedBy = "groupe")
+    @JsonIgnore
     private List<EmploiTemps> emplois;
 }

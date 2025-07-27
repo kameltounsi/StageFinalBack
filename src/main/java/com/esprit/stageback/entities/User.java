@@ -1,5 +1,6 @@
 package com.esprit.stageback.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -28,9 +29,11 @@ public class User {
 
     private String profilePicture; // Optional
     @OneToMany(mappedBy = "formateur")
+    @JsonIgnore
     private List<EmploiTemps> emploisDuTemps;
 
     @OneToMany(mappedBy = "formateur")
+    @JsonIgnore
     private List<Cours> coursDonnes;
 
     @OneToMany(mappedBy = "etudiant")
@@ -55,4 +58,15 @@ public class User {
     @Enumerated(EnumType.STRING)
     private VerificationStatus verificationStatus = VerificationStatus.PENDING;
 
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", fullName='" + fullName + '\'' +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", profilePicture='" + profilePicture + '\'' +
+                ",role='" + role + '\''+
+                '}';
+    }
 }

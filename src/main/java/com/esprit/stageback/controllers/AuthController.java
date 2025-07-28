@@ -9,6 +9,7 @@ import com.esprit.stageback.repositories.UserRepository;
 import com.esprit.stageback.services.AuthService;
 import com.esprit.stageback.services.CloudinaryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -137,6 +138,61 @@ public class AuthController {
         Map<String, String> response = new HashMap<>();
         response.put("message", "Role updated successfully");
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/add-user")
+    public ResponseEntity<Map<String, String>> addUser(
+            @RequestParam("fullname") String fullname,
+            @RequestParam("email") String email,
+            @RequestParam("password") String password,
+            @RequestParam("image") MultipartFile image,
+            @RequestParam("role") Roles role) {
+
+        Map<String, String> response = new HashMap<>();
+
+        try {
+            // Vérifier si l'email existe déjà
+            if (userRepository.findByEmail(email).isPresent()) {
+                response.put("error", "Email already exists.");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+            }
+
+            // 📤 Upload de l'image sur Cloudinary
+            String imageUrl;
+            try {
+                imageUrl = cloudinaryService.uploadFile(image);
+            } catch (Exception e) {
+                response.put("error", "Image upload failed: " + e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
+
+            // Vérifier mot de passe minimal (par ex. 8 caractères)
+            if (password.length() < 8) {
+                response.put("error", "Password must be at least 8 characters long.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 🛠️ Construction du nouvel utilisateur
+            User newUser = User.builder()
+                    .fullName(fullname)
+                    .email(email)
+                    .password(passwordEncoder.encode(password))
+                    .profilePicture(imageUrl)
+                    .role(role)
+                    .build();
+
+            // 💾 Sauvegarde en base de données
+            userRepository.save(newUser);
+
+            // ✅ Réponse succès
+            response.put("message", "User registered successfully");
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            // ⚠️ Erreur inattendue
+            response.put("error", "Unexpected error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
 }

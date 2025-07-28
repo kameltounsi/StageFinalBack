@@ -8,6 +8,7 @@ import com.esprit.stageback.entities.User;
 import com.esprit.stageback.repositories.UserRepository;
 import com.esprit.stageback.services.AuthService;
 import com.esprit.stageback.services.CloudinaryService;
+import com.esprit.stageback.services.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,18 +25,21 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 public class AuthController {
-    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthService authService, CloudinaryService cloudinaryService) {
+    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthService authService, CloudinaryService cloudinaryService, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authService = authService;
         this.cloudinaryService = cloudinaryService;
+        this.emailService = emailService;
     }
     private final UserRepository userRepository; // ✅ Ajouté
     private final PasswordEncoder passwordEncoder; // ✅ Ajouté
     private final JwtService jwtService;
     private final AuthService authService;
     private final CloudinaryService cloudinaryService;
+    private  final EmailService emailService;
+
     /* @PostMapping("/register")
      public ResponseEntity<?> registerUser(@RequestParam("fullname") String fullname,
                                            @RequestParam("email") String email,
@@ -139,7 +143,7 @@ public class AuthController {
         response.put("message", "Role updated successfully");
         return ResponseEntity.ok(response);
     }
-
+/*
     @PostMapping("/add-user")
     public ResponseEntity<Map<String, String>> addUser(
             @RequestParam("fullname") String fullname,
@@ -194,5 +198,42 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
+*/
+@PostMapping("/add-user")
+public ResponseEntity<Map<String, String>> addUser(
+        @RequestParam("fullname") String fullname,
+        @RequestParam("email") String email,
+        @RequestParam("password") String password,
+        @RequestParam("image") MultipartFile image,
+        @RequestParam("role") Roles role) {
 
+    // Upload de l'image
+    String imageUrl = cloudinaryService.uploadFile(image);
+
+    // Création user
+    User newUser = User.builder()
+            .fullName(fullname)
+            .email(email)
+            .password(passwordEncoder.encode(password))
+            .profilePicture(imageUrl)
+            .role(role)
+            .build();
+
+    userRepository.save(newUser);
+
+    // ✅ Envoi du mail de bienvenue
+    emailService.sendWelcomeEmail(email, fullname, email, password);
+
+    Map<String, String> response = new HashMap<>();
+    response.put("message", "User registered successfully & welcome email sent!");
+    return ResponseEntity.ok(response);
+}
+
+    @GetMapping("/check-email")
+    public ResponseEntity<Map<String, Boolean>> checkEmail(@RequestParam String email) {
+        boolean exists = userRepository.existsByEmail(email);
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("exists", exists);
+        return ResponseEntity.ok(response);
+    }
 }

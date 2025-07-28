@@ -67,5 +67,45 @@ public void sendResetCode(String to, String code) {
 
         System.out.println("✅ Email de test envoyé !");
     }
+    public void sendWelcomeEmail(String to, String fullName, String email, String password) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(to);
+            helper.setSubject("🎉 Welcome to Fuse Learning!");
+
+            String htmlContent = "<html>" +
+                    "<body style='font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;'>" +
+                    "<div style='max-width: 600px; margin: auto; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);'>" +
+                    "<img src='cid:logoImage' alt='Fuse Logo' style='display:block; margin:auto; width: 120px; height: auto;'/>" +
+                    "<h2 style='color: #3B82F6; text-align:center;'>Welcome to Fuse Learning 🎓</h2>" +
+                    "<p>Hello <b>" + fullName + "</b>,</p>" +
+                    "<p>We are excited to welcome you to our community! You have successfully joined <b>Fuse Learning</b>.</p>" +
+                    "<p><b>Your login details:</b></p>" +
+                    "<ul>" +
+                    "<li><b>Email:</b> " + email + "</li>" +
+                    "<li><b>Password:</b> " + password + "</li>" +
+                    "</ul>" +
+                    "<p>You will receive your class schedule and other details soon.</p>" +
+                    "<br/>" +
+                    "<p style='color: #666;'>Best regards,<br/>The Fuse Learning Team</p>" +
+                    "</div>" +
+                    "</body>" +
+                    "</html>";
+
+            helper.setText(htmlContent, true);
+
+            // logo Fuse
+            ClassPathResource logo = new ClassPathResource("static/images/logo.png");
+            helper.addInline("logoImage", logo);
+
+            mailSender.send(message);
+            System.out.println("✅ Welcome email sent successfully!");
+        } catch (MessagingException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error sending welcome email: " + e.getMessage());
+        }
+    }
 
 }

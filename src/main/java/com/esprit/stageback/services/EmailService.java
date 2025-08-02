@@ -3,17 +3,23 @@ package com.esprit.stageback.services;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+
 @Service
 @RequiredArgsConstructor
 public class EmailService {
 
     private final JavaMailSender mailSender;
+    private final MessageSource messageSource;
 /*
     public void sendResetCode(String to, String code) {
         SimpleMailMessage message = new SimpleMailMessage();
@@ -67,45 +73,67 @@ public void sendResetCode(String to, String code) {
 
         System.out.println("✅ Email de test envoyé !");
     }
-    public void sendWelcomeEmail(String to, String fullName, String email, String password) {
+
+    public void sendWelcomeEmail(String to, String fullName, String email, String password, Locale locale) {
         try {
+            String subject = messageSource.getMessage("welcome.subject", null, locale);
+            String greeting = messageSource.getMessage("welcome.greeting", new Object[]{fullName}, locale);
+            String body = messageSource.getMessage("welcome.body", null, locale);
+            String details = messageSource.getMessage("welcome.details", null, locale);
+            String emailLabel = messageSource.getMessage("welcome.email", null, locale);
+            String passwordLabel = messageSource.getMessage("welcome.password", null, locale);
+            String footer = messageSource.getMessage("welcome.footer", null, locale);
+            String signature = messageSource.getMessage("welcome.signature", null, locale);
+
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            MimeMessageHelper helper = new MimeMessageHelper(
+                    message,
+                    MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
+                    StandardCharsets.UTF_8.name()
+            );
 
             helper.setTo(to);
-            helper.setSubject("🎉 Welcome to Fuse Learning!");
+            helper.setSubject(subject);
 
-            String htmlContent = "<html>" +
-                    "<body style='font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;'>" +
-                    "<div style='max-width: 600px; margin: auto; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);'>" +
-                    "<img src='cid:logoImage' alt='Fuse Logo' style='display:block; margin:auto; width: 120px; height: auto;'/>" +
-                    "<h2 style='color: #3B82F6; text-align:center;'>Welcome to Fuse Learning 🎓</h2>" +
-                    "<p>Hello <b>" + fullName + "</b>,</p>" +
-                    "<p>We are excited to welcome you to our community! You have successfully joined <b>Fuse Learning</b>.</p>" +
-                    "<p><b>Your login details:</b></p>" +
+            // Gérer l’orientation si langue arabe
+            String direction = locale.getLanguage().equals("ar") ? "rtl" : "ltr";
+            String textAlign = locale.getLanguage().equals("ar") ? "right" : "left";
+
+            String htmlContent = "<!DOCTYPE html>" +
+                    "<html lang='" + locale.getLanguage() + "' dir='" + direction + "'>" +
+                    "<head><meta charset='UTF-8'></head>" +
+                    "<body style='font-family: Arial, sans-serif; padding:20px; background:#f9f9f9; direction:" + direction + "; text-align:" + textAlign + ";'>" +
+                    "<div style='max-width:600px;margin:auto;background:white;border-radius:8px;padding:20px;'>" +
+                    "<img src='cid:logoImage' alt='Fuse Logo' style='display:block;margin:auto;width:120px;height:auto;'/>" +
+                    "<h2 style='color:#3B82F6;text-align:center;'>" + subject + "</h2>" +
+                    "<p>" + greeting + "</p>" +
+                    "<p>" + body + "</p>" +
+                    "<p><b>" + details + "</b></p>" +
                     "<ul>" +
-                    "<li><b>Email:</b> " + email + "</li>" +
-                    "<li><b>Password:</b> " + password + "</li>" +
+                    "<li><b>" + emailLabel + ":</b> " + email + "</li>" +
+                    "<li><b>" + passwordLabel + ":</b> " + password + "</li>" +
                     "</ul>" +
-                    "<p>You will receive your class schedule and other details soon.</p>" +
+                    "<p>" + footer + "</p>" +
                     "<br/>" +
-                    "<p style='color: #666;'>Best regards,<br/>The Fuse Learning Team</p>" +
-                    "</div>" +
-                    "</body>" +
-                    "</html>";
+                    "<p style='color:#666;'>" + signature + "</p>" +
+                    "</div></body></html>";
 
             helper.setText(htmlContent, true);
 
-            // logo Fuse
+            // Logo
             ClassPathResource logo = new ClassPathResource("static/images/logo.png");
             helper.addInline("logoImage", logo);
 
             mailSender.send(message);
-            System.out.println("✅ Welcome email sent successfully!");
-        } catch (MessagingException e) {
-            e.printStackTrace();
+
+            System.out.println("✅ Welcome email sent in " + locale.getLanguage());
+        } catch (Exception e) {
             throw new RuntimeException("Error sending welcome email: " + e.getMessage());
         }
     }
+
+
+
+
 
 }

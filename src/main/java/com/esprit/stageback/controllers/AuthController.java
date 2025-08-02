@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.esprit.stageback.config.JwtService;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @RestController
@@ -39,29 +40,6 @@ public class AuthController {
     private final AuthService authService;
     private final CloudinaryService cloudinaryService;
     private  final EmailService emailService;
-
-    /* @PostMapping("/register")
-     public ResponseEntity<?> registerUser(@RequestParam("fullname") String fullname,
-                                           @RequestParam("email") String email,
-                                           @RequestParam("password") String password,
-                                           @RequestParam("image") MultipartFile image) {
-         // ⬆️ Uploader sur Cloudinary
-         String imageUrl = cloudinaryService.uploadFile(image);
-
-         // 🛠️ Construction de l'utilisateur
-         User newUser = User.builder()
-                 .fullName(fullname)
-                 .email(email)
-                 .password(passwordEncoder.encode(password))
-                 .profilePicture(imageUrl)
-                 .role(Roles.USER)
-                 .build();
-
-         // 💾 Enregistrement
-         userRepository.save(newUser);
-
-         return ResponseEntity.ok("User registered successfully");
-     }*/
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> registerUser(
             @RequestParam("fullname") String fullname,
@@ -121,14 +99,7 @@ public class AuthController {
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userRepository.findAll());
     }
-    /*
-    @PutMapping("/{id}/role")
-    public ResponseEntity<?> updateUserRole(@PathVariable Long id, @RequestParam String role) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
-        user.setRole(Roles.valueOf(role.toUpperCase()));
-        userRepository.save(user);
-        return ResponseEntity.ok("Role updated successfully");
-    }*/
+
 
     @PutMapping("/{id}/role")
     public ResponseEntity<?> updateUserRole(@PathVariable Long id, @RequestParam String role) {
@@ -205,12 +176,13 @@ public ResponseEntity<Map<String, String>> addUser(
         @RequestParam("email") String email,
         @RequestParam("password") String password,
         @RequestParam("image") MultipartFile image,
-        @RequestParam("role") Roles role) {
+        @RequestParam("role") Roles role,
+        @RequestParam(value = "lang", defaultValue = "en") String lang) {
 
-    // Upload de l'image
+    // Upload de l'image vers Cloudinary
     String imageUrl = cloudinaryService.uploadFile(image);
 
-    // Création user
+    // Création du nouvel utilisateur
     User newUser = User.builder()
             .fullName(fullname)
             .email(email)
@@ -221,13 +193,18 @@ public ResponseEntity<Map<String, String>> addUser(
 
     userRepository.save(newUser);
 
-    // ✅ Envoi du mail de bienvenue
-    emailService.sendWelcomeEmail(email, fullname, email, password);
+    // Déterminer la langue à partir du paramètre reçu
+    Locale locale = new Locale(lang);
 
+    // Envoi de l’email avec i18n
+    emailService.sendWelcomeEmail(email, fullname, email, password, locale);
+
+    // Réponse
     Map<String, String> response = new HashMap<>();
     response.put("message", "User registered successfully & welcome email sent!");
     return ResponseEntity.ok(response);
 }
+
 
     @GetMapping("/check-email")
     public ResponseEntity<Map<String, Boolean>> checkEmail(@RequestParam String email) {

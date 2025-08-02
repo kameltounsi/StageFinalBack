@@ -21,17 +21,9 @@ public class Groupe {
     private String nom;
     private String specialite; // Informatique, BTP, Commerce...
 
-    @ManyToMany
-    @JoinTable(
-            name = "groupe_trainers",
-            joinColumns = @JoinColumn(name = "groupe_id"),
-            inverseJoinColumns = @JoinColumn(name = "trainer_id")
-    )
-    private List<User> trainers;
-
     @ManyToMany(mappedBy = "groupes")
     @JsonIgnore
-    private List<User> etudiants;
+    private List<User> membres;
 
     @OneToMany(mappedBy = "groupe")
     @JsonIgnore

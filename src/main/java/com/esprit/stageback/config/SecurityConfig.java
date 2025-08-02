@@ -37,6 +37,7 @@ public class SecurityConfig {
                         //.requestMatchers("/api/auth/add-user").hasRole("ADMIN")
                         .requestMatchers(
                                 "/api/auth/**",
+                                "/api/groups/**",
                                 "/v3/api-docs/**",               // Swagger
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",

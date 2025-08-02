@@ -19,6 +19,15 @@ public class Groupe {
     private Long id;
 
     private String nom;
+    private String specialite; // Informatique, BTP, Commerce...
+
+    @ManyToMany
+    @JoinTable(
+            name = "groupe_trainers",
+            joinColumns = @JoinColumn(name = "groupe_id"),
+            inverseJoinColumns = @JoinColumn(name = "trainer_id")
+    )
+    private List<User> trainers;
 
     @ManyToMany(mappedBy = "groupes")
     @JsonIgnore

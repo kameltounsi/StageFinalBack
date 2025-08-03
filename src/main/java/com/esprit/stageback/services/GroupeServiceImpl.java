@@ -41,12 +41,23 @@ public class GroupeServiceImpl implements GroupeService {
         String code = specialiteCodes.getOrDefault(specialite, specialite.substring(0, 3).toUpperCase());
         String baseNom = code + " " + niveau;
 
-        // Compter combien existent déjà
-        long count = groupeRepository.findAll().stream()
+        // Trouver le plus grand suffixe numérique existant
+        List<Groupe> existingGroups = groupeRepository.findAll().stream()
                 .filter(g -> g.getNom().startsWith(baseNom))
-                .count();
+                .toList();
 
-        String finalNom = baseNom + (count == 0 ? "" : " " + (count + 1));
+        int maxSuffix = 0;
+        for (Groupe g : existingGroups) {
+            String nom = g.getNom();
+            if (nom.equals(baseNom)) {
+                maxSuffix = Math.max(maxSuffix, 1);
+            } else if (nom.matches(baseNom + " \\d+")) {
+                int suffix = Integer.parseInt(nom.replace(baseNom, "").trim());
+                maxSuffix = Math.max(maxSuffix, suffix);
+            }
+        }
+
+        String finalNom = (maxSuffix == 0) ? baseNom : baseNom + " " + (maxSuffix + 1);
 
         Groupe groupe = Groupe.builder()
                 .nom(finalNom)
@@ -79,6 +90,7 @@ public class GroupeServiceImpl implements GroupeService {
 
         return groupeRepository.save(savedGroup);
     }
+
 
     @Override
     public List<Groupe> getAllGroups() {

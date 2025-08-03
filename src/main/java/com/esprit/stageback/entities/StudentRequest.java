@@ -20,5 +20,5 @@ public class StudentRequest {
 
     private String profilePicture;
 
-    private String status = "PENDING"; // PENDING | APPROVED | REJECTED
-}
+    @Enumerated(EnumType.STRING)
+    private RequestStatus status;}

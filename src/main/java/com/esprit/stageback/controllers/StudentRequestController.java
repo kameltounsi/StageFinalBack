@@ -4,6 +4,7 @@ import com.esprit.stageback.services.StudentRequestService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/requests")
@@ -16,12 +17,19 @@ public class StudentRequestController {
     }
 
     @PostMapping("/submit")
-    public ResponseEntity<StudentRequest> submitRequest(
+    public ResponseEntity<?> submitRequest(
             @RequestParam String email,
             @RequestParam String specialite,
             @RequestParam(required = false) MultipartFile image
     ) {
-        StudentRequest request = requestService.submitRequest(email, specialite, image);
-        return ResponseEntity.ok(request);
+        try {
+            StudentRequest request = requestService.submitRequest(email, specialite, image);
+            return ResponseEntity.ok(request);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(
+                    java.util.Map.of("message", e.getReason())
+            );
+        }
     }
+
 }

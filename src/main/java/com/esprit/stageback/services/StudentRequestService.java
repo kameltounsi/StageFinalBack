@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class StudentRequestService {
@@ -36,6 +38,16 @@ public class StudentRequestService {
                 .status(RequestStatus.PENDING)
                 .build();
 
+        return repository.save(request);
+    }
+    public List<StudentRequest> getRequestsByStatus(RequestStatus status) {
+        return repository.findByStatus(status);
+    }
+
+    public StudentRequest updateRequestStatus(Long id, RequestStatus status) {
+        StudentRequest request = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Request not found"));
+        request.setStatus(status);
         return repository.save(request);
     }
 }

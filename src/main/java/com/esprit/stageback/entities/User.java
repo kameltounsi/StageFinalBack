@@ -8,7 +8,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.Collection;
 import java.util.List;
-
 @Entity
 @Data
 @NoArgsConstructor
@@ -27,7 +26,11 @@ public class User {
 
     private String password;
 
-    private String profilePicture; // Optional
+    private String profilePicture;
+
+    // ✅ nouvelle colonne
+    private String specialite;
+
     @OneToMany(mappedBy = "formateur")
     @JsonIgnore
     private List<EmploiTemps> emploisDuTemps;
@@ -42,41 +45,40 @@ public class User {
     @OneToMany(mappedBy = "etudiant")
     private List<Presence> presences;
 
-    // === Relation pour STUDENT ===
     @ManyToOne
     @JoinColumn(name = "groupe_id")
-    private Groupe studentGroupe; // un seul groupe si STUDENT
+    private Groupe studentGroupe;
 
-    // === Relation pour TRAINER ===
     @ManyToMany
     @JoinTable(
             name = "trainer_groupes",
             joinColumns = @JoinColumn(name = "trainer_id"),
             inverseJoinColumns = @JoinColumn(name = "groupe_id")
     )
-    private List<Groupe> trainerGroupes; // plusieurs groupes si TRAINER
+    private List<Groupe> trainerGroupes;
+
     @Enumerated(EnumType.STRING)
     private Roles role;
-    @Enumerated(EnumType.STRING)
-    private Status status = Status.NOT_VISIBLE; // valeur par défaut
 
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
-    }
+    @Enumerated(EnumType.STRING)
+    private Status status = Status.NOT_VISIBLE;
+
     private String resetCode;
 
     @Enumerated(EnumType.STRING)
     private VerificationStatus verificationStatus = VerificationStatus.PENDING;
 
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
+    }
     @Override
     public String toString() {
-        return "User{" +
-                "id=" + id +
+        return "User{id=" + id +
                 ", fullName='" + fullName + '\'' +
                 ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
-                ", profilePicture='" + profilePicture + '\'' +
-                ",role='" + role + '\''+
+                ", role=" + role +
                 '}';
     }
+
 }
+

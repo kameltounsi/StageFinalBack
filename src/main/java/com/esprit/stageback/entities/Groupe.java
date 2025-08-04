@@ -21,6 +21,10 @@ public class Groupe {
     private String nom;
     private String specialite; // Informatique, BTP, Commerce...
 
+    // ✅ Nouvelle capacité par défaut
+    private int trainerCapacity = 2;
+    private int studentCapacity = 25;
+
     @OneToMany(mappedBy = "studentGroupe")
     @JsonIgnore
     private List<User> students;

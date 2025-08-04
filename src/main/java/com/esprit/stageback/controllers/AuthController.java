@@ -167,55 +167,77 @@ public ResponseEntity<Map<String, String>> addUser(
         @RequestParam("password") String password,
         @RequestParam(value = "image", required = false) MultipartFile image,
         @RequestParam("role") Roles role,
+        @RequestParam(value = "specialite", required = false) String specialite, // 🔹 ajouté
         @RequestParam(value = "groupeId", required = false) Long groupeId, // pour STUDENT
         @RequestParam(value = "groupeIds", required = false) List<Long> groupeIds, // pour TRAINER
         @RequestParam(value = "requestId", required = false) Long requestId,
         @RequestParam(value = "lang", defaultValue = "en") String lang,
         @RequestParam(value = "profilePictureUrl", required = false) String profilePictureUrl
-
 ) {
-    String imageUrl = null;
-    if (image != null && !image.isEmpty()) {
-        imageUrl = cloudinaryService.uploadFile(image);
-    } else if (profilePictureUrl != null && !profilePictureUrl.isBlank()) {
-        imageUrl = profilePictureUrl; // on garde l’image existante
+    try {
+        // 🔹 1. Gestion de l’image
+        String imageUrl = null;
+        if (image != null && !image.isEmpty()) {
+            imageUrl = cloudinaryService.uploadFile(image);
+        } else if (profilePictureUrl != null && !profilePictureUrl.isBlank()) {
+            imageUrl = profilePictureUrl;
+        }
+
+        // 🔹 2. Création du nouvel utilisateur
+        User newUser = User.builder()
+                .fullName(fullname)
+                .email(email)
+                .password(passwordEncoder.encode(password))
+                .profilePicture(imageUrl)
+                .role(role)
+                .specialite(specialite) // 🔹 on enregistre la spécialité
+                .build();
+
+        // 🔹 3. Affectation selon le rôle
+        if (role == Roles.STUDENT && groupeId != null) {
+            Groupe groupe = groupeRepository.findById(groupeId)
+                    .orElseThrow(() -> new RuntimeException("Groupe not found"));
+            newUser.setStudentGroupe(groupe);
+        } else if (role == Roles.TRAINER && groupeIds != null && !groupeIds.isEmpty()) {
+            List<Groupe> groupes = groupeRepository.findAllById(groupeIds);
+            newUser.setTrainerGroupes(groupes);
+        }
+
+        // 🔹 4. Sauvegarde
+        userRepository.save(newUser);
+
+        // 🔹 5. Email de bienvenue
+        Locale locale = new Locale(lang);
+        emailService.sendWelcomeEmail(
+                newUser.getEmail(),
+                newUser.getFullName(),
+                newUser.getEmail(),
+                password,
+                locale
+        );
+
+        // 🔹 6. Mise à jour de la requête si elle existe
+        if (requestId != null) {
+            StudentRequest req = requestRepository.findById(requestId)
+                    .orElseThrow(() -> new RuntimeException("Request not found"));
+            req.setStatus(RequestStatus.ACCEPTED);
+            requestRepository.save(req);
+        }
+
+        // 🔹 7. Réponse
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "User registered successfully!");
+        response.put("userEmail", newUser.getEmail());
+        response.put("role", newUser.getRole().name());
+        response.put("specialite", newUser.getSpecialite() != null ? newUser.getSpecialite() : "Not specified");
+
+        return ResponseEntity.ok(response);
+
+    } catch (Exception e) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Failed to register user: " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
-    User newUser = User.builder()
-            .fullName(fullname)
-            .email(email)
-            .password(passwordEncoder.encode(password))
-            .profilePicture(imageUrl)
-            .role(role)
-            .build();
-
-    // 🔹 Affectation selon le rôle
-    if (role == Roles.STUDENT && groupeId != null) {
-        Groupe groupe = groupeRepository.findById(groupeId)
-                .orElseThrow(() -> new RuntimeException("Groupe not found"));
-        newUser.setStudentGroupe(groupe);
-    } else if (role == Roles.TRAINER && groupeIds != null && !groupeIds.isEmpty()) {
-        List<Groupe> groupes = groupeRepository.findAllById(groupeIds);
-        newUser.setTrainerGroupes(groupes);
-    }
-
-    userRepository.save(newUser);
-    // Déterminer la langue à partir du paramètre reçu
-    Locale locale = new Locale(lang);
-
-    // Envoi de l’email avec i18n
-    emailService.sendWelcomeEmail(email, fullname, email, password, locale);
-
-    // 🔹 Mettre à jour la requête si elle existe
-    if (requestId != null) {
-        StudentRequest req = requestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
-        req.setStatus(ACCEPTED);
-        requestRepository.save(req);
-    }
-
-    Map<String, String> response = new HashMap<>();
-    response.put("message", "User registered successfully!");
-    return ResponseEntity.ok(response);
 }
 
 

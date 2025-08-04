@@ -57,6 +57,8 @@ public class GroupeServiceImpl implements GroupeService {
         Groupe groupe = Groupe.builder()
                 .nom(finalNom)
                 .specialite(specialite)
+                .trainerCapacity(2)   // ✅ fixé
+                .studentCapacity(25)
                 .build();
 
         Groupe savedGroup = groupeRepository.save(groupe);
@@ -68,10 +70,16 @@ public class GroupeServiceImpl implements GroupeService {
                 if (trainer.getTrainerGroupes() == null) {
                     trainer.setTrainerGroupes(new ArrayList<>());
                 }
+
+                if (trainer.getTrainerGroupes().size() >= 4) {
+                    throw new RuntimeException("Trainer " + trainer.getFullName() + " has reached the maximum group limit (4).");
+                }
+
                 trainer.getTrainerGroupes().add(savedGroup);
                 userRepository.save(trainer);
             }
         }
+
 
         // Affecter les étudiants
         if (studentIds != null && !studentIds.isEmpty()) {

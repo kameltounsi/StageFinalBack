@@ -9,4 +9,6 @@ public interface GroupeService {
     List<Groupe> getAllGroups();
     Groupe getGroupById(Long id);
     void deleteGroup(Long id);
+    List<Groupe> findGroupsBySpecialiteAndLevel(String specialite, String level);
+
 }

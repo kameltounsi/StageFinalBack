@@ -41,4 +41,12 @@ public class GroupeController {
         groupeService.deleteGroup(id);
         return ResponseEntity.noContent().build();
     }
+    // ✅ Nouvel endpoint spécifique pour ton besoin Angular
+    @GetMapping("/by-specialite")
+    public List<Groupe> getGroupsBySpecialiteAndLevel(
+            @RequestParam String specialite,
+            @RequestParam String level
+    ) {
+        return groupeService.findGroupsBySpecialiteAndLevel(specialite, level);
+    }
 }

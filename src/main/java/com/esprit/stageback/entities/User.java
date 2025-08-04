@@ -42,9 +42,19 @@ public class User {
     @OneToMany(mappedBy = "etudiant")
     private List<Presence> presences;
 
-    @ManyToMany
-    private List<Groupe> groupes;
+    // === Relation pour STUDENT ===
+    @ManyToOne
+    @JoinColumn(name = "groupe_id")
+    private Groupe studentGroupe; // un seul groupe si STUDENT
 
+    // === Relation pour TRAINER ===
+    @ManyToMany
+    @JoinTable(
+            name = "trainer_groupes",
+            joinColumns = @JoinColumn(name = "trainer_id"),
+            inverseJoinColumns = @JoinColumn(name = "groupe_id")
+    )
+    private List<Groupe> trainerGroupes; // plusieurs groupes si TRAINER
     @Enumerated(EnumType.STRING)
     private Roles role;
     @Enumerated(EnumType.STRING)

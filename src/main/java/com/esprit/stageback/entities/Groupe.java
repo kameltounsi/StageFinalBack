@@ -21,9 +21,13 @@ public class Groupe {
     private String nom;
     private String specialite; // Informatique, BTP, Commerce...
 
-    @ManyToMany(mappedBy = "groupes")
+    @OneToMany(mappedBy = "studentGroupe")
     @JsonIgnore
-    private List<User> membres;
+    private List<User> students;
+
+    @ManyToMany(mappedBy = "trainerGroupes")
+    @JsonIgnore
+    private List<User> trainers;
 
     @OneToMany(mappedBy = "groupe")
     @JsonIgnore

@@ -20,7 +20,7 @@ public class StudentRequestService {
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
 
-    public StudentRequest submitRequest(String email, String specialite, MultipartFile image) {
+    public StudentRequest submitRequest(String fullname , String email, String specialite, MultipartFile image) {
         // Vérifier si l'email existe déjà dans User
         if (userRepository.existsByEmail(email)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This email is already registered!");
@@ -32,6 +32,7 @@ public class StudentRequestService {
         }
 
         StudentRequest request = StudentRequest.builder()
+                .fullname(fullname)
                 .email(email)
                 .specialite(specialite)
                 .profilePicture(imageUrl)

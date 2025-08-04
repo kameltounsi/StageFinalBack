@@ -22,12 +22,14 @@ public class StudentRequestController {
 
     @PostMapping("/submit")
     public ResponseEntity<?> submitRequest(
+            @RequestParam String fullname,
+
             @RequestParam String email,
             @RequestParam String specialite,
             @RequestParam(required = false) MultipartFile image
     ) {
         try {
-            StudentRequest request = requestService.submitRequest(email, specialite, image);
+            StudentRequest request = requestService.submitRequest(fullname, email, specialite, image);
             return ResponseEntity.ok(request);
         } catch (ResponseStatusException e) {
             return ResponseEntity.status(e.getStatusCode()).body(

@@ -15,10 +15,78 @@ public class GroupeServiceImpl implements GroupeService {
 
     private final GroupeRepository groupeRepository;
     private final UserRepository userRepository;
-
     @Override
     public Groupe createGroup(String specialite, String niveau, List<Long> trainerIds, List<Long> studentIds) {
-        // Mapping spécialités → codes abrégés
+        // Générer le code de la spécialité
+        String code = generateCodeFromSpecialite(specialite);
+        String baseNom = code + " " + niveau.toUpperCase();
+
+        // Chercher tous les groupes qui commencent par baseNom
+        List<Groupe> existingGroups = groupeRepository.findAll().stream()
+                .filter(g -> g.getNom().startsWith(baseNom))
+                .toList();
+
+        // Trouver le plus grand suffixe
+        int maxSuffix = 0;
+        for (Groupe g : existingGroups) {
+            String nom = g.getNom().trim();
+
+            // Cas exact : "WD A" sans suffixe
+            if (nom.equals(baseNom)) {
+                maxSuffix = Math.max(maxSuffix, 1);
+            }
+            // Cas avec suffixe numérique : "WD A 2", "WD A 10"
+            else if (nom.matches(baseNom + " \\d+")) {
+                String suffixStr = nom.substring(baseNom.length()).trim();
+                try {
+                    int suffix = Integer.parseInt(suffixStr);
+                    maxSuffix = Math.max(maxSuffix, suffix);
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+
+        // Générer le nom final
+        String finalNom;
+        if (existingGroups.isEmpty()) {
+            finalNom = baseNom; // Premier groupe → WD A
+        } else {
+            finalNom = baseNom + " " + (maxSuffix + 1); // Exemple → WD A4
+        }
+
+        // Créer et sauvegarder le groupe
+        Groupe groupe = Groupe.builder()
+                .nom(finalNom)
+                .specialite(specialite)
+                .build();
+
+        Groupe savedGroup = groupeRepository.save(groupe);
+
+        // Affecter les formateurs
+        if (trainerIds != null && !trainerIds.isEmpty()) {
+            List<User> trainers = userRepository.findAllById(trainerIds);
+            for (User trainer : trainers) {
+                if (trainer.getTrainerGroupes() == null) {
+                    trainer.setTrainerGroupes(new ArrayList<>());
+                }
+                trainer.getTrainerGroupes().add(savedGroup);
+                userRepository.save(trainer);
+            }
+        }
+
+        // Affecter les étudiants
+        if (studentIds != null && !studentIds.isEmpty()) {
+            List<User> students = userRepository.findAllById(studentIds);
+            for (User student : students) {
+                student.setStudentGroupe(savedGroup);
+                userRepository.save(student);
+            }
+        }
+
+        return savedGroup;
+    }
+
+
+    private String generateCodeFromSpecialite(String specialite) {
         Map<String, String> specialiteCodes = Map.ofEntries(
                 Map.entry("Cybersecurity & Ethical Hacking", "C&EH"),
                 Map.entry("Web Development", "WD"),
@@ -36,60 +104,11 @@ public class GroupeServiceImpl implements GroupeService {
                 Map.entry("Sales & Commercial Techniques", "SCT"),
                 Map.entry("Logistics & Supply Chain Management", "LSCM")
         );
-
-        // Code abrégé de la spécialité
-        String code = specialiteCodes.getOrDefault(specialite, specialite.substring(0, 3).toUpperCase());
-        String baseNom = code + " " + niveau;
-
-        // Trouver le plus grand suffixe numérique existant
-        List<Groupe> existingGroups = groupeRepository.findAll().stream()
-                .filter(g -> g.getNom().startsWith(baseNom))
-                .toList();
-
-        int maxSuffix = 0;
-        for (Groupe g : existingGroups) {
-            String nom = g.getNom();
-            if (nom.equals(baseNom)) {
-                maxSuffix = Math.max(maxSuffix, 1);
-            } else if (nom.matches(baseNom + " \\d+")) {
-                int suffix = Integer.parseInt(nom.replace(baseNom, "").trim());
-                maxSuffix = Math.max(maxSuffix, suffix);
-            }
-        }
-
-        String finalNom = (maxSuffix == 0) ? baseNom : baseNom + " " + (maxSuffix + 1);
-
-        Groupe groupe = Groupe.builder()
-                .nom(finalNom)
-                .specialite(specialite)
-                .membres(new ArrayList<>())
-                .build();
-
-        Groupe savedGroup = groupeRepository.save(groupe);
-
-        // Affecter trainers
-        if (trainerIds != null && !trainerIds.isEmpty()) {
-            List<User> trainers = userRepository.findAllById(trainerIds);
-            for (User trainer : trainers) {
-                trainer.getGroupes().add(savedGroup);
-                userRepository.save(trainer);
-            }
-            savedGroup.getMembres().addAll(trainers);
-        }
-
-        // Affecter students
-        if (studentIds != null && !studentIds.isEmpty()) {
-            List<User> students = userRepository.findAllById(studentIds);
-            for (User student : students) {
-                student.getGroupes().clear(); // Un seul groupe pour Student
-                student.getGroupes().add(savedGroup);
-                userRepository.save(student);
-            }
-            savedGroup.getMembres().addAll(students);
-        }
-
-        return groupeRepository.save(savedGroup);
+        return specialiteCodes.getOrDefault(specialite, specialite.substring(0, 3).toUpperCase());
     }
+
+
+
 
 
     @Override
@@ -107,4 +126,18 @@ public class GroupeServiceImpl implements GroupeService {
     public void deleteGroup(Long id) {
         groupeRepository.deleteById(id);
     }
+    @Override
+    public List<Groupe> findGroupsBySpecialiteAndLevel(String specialite, String level) {
+        String code = switch (level.toUpperCase()) {
+            case "A" -> "A";
+            case "B" -> "B";
+            default -> level;
+        };
+
+        return groupeRepository.findAll().stream()
+                .filter(g -> g.getSpecialite().equalsIgnoreCase(specialite)
+                        && g.getNom().contains(code)) // on filtre par spécialité + niveau
+                .toList();
+    }
+
 }

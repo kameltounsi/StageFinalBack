@@ -3,13 +3,15 @@ package com.esprit.stageback.controllers;
 
 
 import com.esprit.stageback.dto.*;
-import com.esprit.stageback.entities.Roles;
-import com.esprit.stageback.entities.User;
+import com.esprit.stageback.entities.*;
+import com.esprit.stageback.repositories.GroupeRepository;
+import com.esprit.stageback.repositories.StudentRequestRepository;
 import com.esprit.stageback.repositories.UserRepository;
 import com.esprit.stageback.services.AuthService;
 import com.esprit.stageback.services.CloudinaryService;
 import com.esprit.stageback.services.EmailService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,19 +24,27 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import static com.esprit.stageback.entities.RequestStatus.ACCEPTED;
+
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 public class AuthController {
-    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthService authService, CloudinaryService cloudinaryService, EmailService emailService) {
+
+    public AuthController(UserRepository userRepository, GroupeRepository groupeRepository, StudentRequestRepository requestRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthService authService, CloudinaryService cloudinaryService, EmailService emailService) {
         this.userRepository = userRepository;
+        this.groupeRepository = groupeRepository;
+        this.requestRepository = requestRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authService = authService;
         this.cloudinaryService = cloudinaryService;
         this.emailService = emailService;
     }
-    private final UserRepository userRepository; // ✅ Ajouté
+    private final UserRepository userRepository;
+    private final GroupeRepository groupeRepository;
+    private final StudentRequestRepository requestRepository;
+    // ✅ Ajouté
     private final PasswordEncoder passwordEncoder; // ✅ Ajouté
     private final JwtService jwtService;
     private final AuthService authService;
@@ -115,61 +125,6 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 /*
-    @PostMapping("/add-user")
-    public ResponseEntity<Map<String, String>> addUser(
-            @RequestParam("fullname") String fullname,
-            @RequestParam("email") String email,
-            @RequestParam("password") String password,
-            @RequestParam("image") MultipartFile image,
-            @RequestParam("role") Roles role) {
-
-        Map<String, String> response = new HashMap<>();
-
-        try {
-            // Vérifier si l'email existe déjà
-            if (userRepository.findByEmail(email).isPresent()) {
-                response.put("error", "Email already exists.");
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-            }
-
-            // 📤 Upload de l'image sur Cloudinary
-            String imageUrl;
-            try {
-                imageUrl = cloudinaryService.uploadFile(image);
-            } catch (Exception e) {
-                response.put("error", "Image upload failed: " + e.getMessage());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-            }
-
-            // Vérifier mot de passe minimal (par ex. 8 caractères)
-            if (password.length() < 8) {
-                response.put("error", "Password must be at least 8 characters long.");
-                return ResponseEntity.badRequest().body(response);
-            }
-
-            // 🛠️ Construction du nouvel utilisateur
-            User newUser = User.builder()
-                    .fullName(fullname)
-                    .email(email)
-                    .password(passwordEncoder.encode(password))
-                    .profilePicture(imageUrl)
-                    .role(role)
-                    .build();
-
-            // 💾 Sauvegarde en base de données
-            userRepository.save(newUser);
-
-            // ✅ Réponse succès
-            response.put("message", "User registered successfully");
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            // ⚠️ Erreur inattendue
-            response.put("error", "Unexpected error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-        }
-    }
-*/
 @PostMapping("/add-user")
 public ResponseEntity<Map<String, String>> addUser(
         @RequestParam("fullname") String fullname,
@@ -204,6 +159,65 @@ public ResponseEntity<Map<String, String>> addUser(
     response.put("message", "User registered successfully & welcome email sent!");
     return ResponseEntity.ok(response);
 }
+*/
+@PostMapping("/add-user")
+public ResponseEntity<Map<String, String>> addUser(
+        @RequestParam("fullname") String fullname,
+        @RequestParam("email") String email,
+        @RequestParam("password") String password,
+        @RequestParam(value = "image", required = false) MultipartFile image,
+        @RequestParam("role") Roles role,
+        @RequestParam(value = "groupeId", required = false) Long groupeId, // pour STUDENT
+        @RequestParam(value = "groupeIds", required = false) List<Long> groupeIds, // pour TRAINER
+        @RequestParam(value = "requestId", required = false) Long requestId,
+        @RequestParam(value = "lang", defaultValue = "en") String lang,
+        @RequestParam(value = "profilePictureUrl", required = false) String profilePictureUrl
+
+) {
+    String imageUrl = null;
+    if (image != null && !image.isEmpty()) {
+        imageUrl = cloudinaryService.uploadFile(image);
+    } else if (profilePictureUrl != null && !profilePictureUrl.isBlank()) {
+        imageUrl = profilePictureUrl; // on garde l’image existante
+    }
+    User newUser = User.builder()
+            .fullName(fullname)
+            .email(email)
+            .password(passwordEncoder.encode(password))
+            .profilePicture(imageUrl)
+            .role(role)
+            .build();
+
+    // 🔹 Affectation selon le rôle
+    if (role == Roles.STUDENT && groupeId != null) {
+        Groupe groupe = groupeRepository.findById(groupeId)
+                .orElseThrow(() -> new RuntimeException("Groupe not found"));
+        newUser.setStudentGroupe(groupe);
+    } else if (role == Roles.TRAINER && groupeIds != null && !groupeIds.isEmpty()) {
+        List<Groupe> groupes = groupeRepository.findAllById(groupeIds);
+        newUser.setTrainerGroupes(groupes);
+    }
+
+    userRepository.save(newUser);
+    // Déterminer la langue à partir du paramètre reçu
+    Locale locale = new Locale(lang);
+
+    // Envoi de l’email avec i18n
+    emailService.sendWelcomeEmail(email, fullname, email, password, locale);
+
+    // 🔹 Mettre à jour la requête si elle existe
+    if (requestId != null) {
+        StudentRequest req = requestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+        req.setStatus(ACCEPTED);
+        requestRepository.save(req);
+    }
+
+    Map<String, String> response = new HashMap<>();
+    response.put("message", "User registered successfully!");
+    return ResponseEntity.ok(response);
+}
+
 
 
     @GetMapping("/check-email")

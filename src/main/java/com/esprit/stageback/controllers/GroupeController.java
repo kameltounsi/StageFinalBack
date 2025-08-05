@@ -86,24 +86,39 @@ public class GroupeController {
     public ResponseEntity<Map<String, String>> addTrainerToGroup(
             @PathVariable Long groupId,
             @PathVariable Long trainerId) {
+
         Groupe group = groupeRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
         User trainer = userRepository.findById(trainerId)
                 .orElseThrow(() -> new RuntimeException("Trainer not found"));
 
+        // Vérifier la spécialité
         if (!group.getSpecialite().equals(trainer.getSpecialite())) {
             return ResponseEntity.badRequest().body(Map.of("error", "Speciality does not match group"));
         }
 
-        if (group.getTrainers().size() >= group.getTrainerCapacity()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Group already has 2 trainers"));
+        // Vérifier si déjà ajouté
+        if (group.getTrainers().stream().anyMatch(t -> t.getId().equals(trainerId))) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Trainer already assigned to this group"));
         }
 
+        // Vérifier la capacité restante
+        if (group.getTrainers().size() >= group.getTrainerCapacity()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Group has reached the maximum trainer capacity"));
+        }
+
+        // Ajouter le trainer
         group.getTrainers().add(trainer);
+
+        // S'assurer que la liste des groupes du trainer existe
         if (trainer.getTrainerGroupes() == null) {
             trainer.setTrainerGroupes(new ArrayList<>());
         }
+
         trainer.getTrainerGroupes().add(group);
+
+        // Décrémenter la capacité
+        group.setTrainerCapacity(group.getTrainerCapacity() - 1);
 
         groupeRepository.save(group);
         userRepository.save(trainer);
@@ -113,9 +128,6 @@ public class GroupeController {
         return ResponseEntity.ok(response);
     }
 
-
-
-
     // Supprimer un étudiant
     @DeleteMapping("/{groupId}/remove-student/{studentId}")
     public ResponseEntity<?> removeStudentFromGroup(
@@ -124,19 +136,29 @@ public class GroupeController {
         Groupe group = groupeRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        // Retirer l'étudiant
         group.setStudents(
                 group.getStudents().stream()
                         .filter(s -> !s.getId().equals(studentId))
                         .toList()
         );
+
+        // 🔥 Libérer la place
+        group.setStudentCapacity(group.getStudentCapacity() + 1);
+
+        // ⚡ Supprimer le lien du côté étudiant
+        student.setStudentGroupe(null);
+        userRepository.save(student);
+
         groupeRepository.save(group);
 
-        return ResponseEntity.ok("Student removed successfully");
+        return ResponseEntity.ok(Map.of("message", "Student removed successfully"));
     }
 
-
-
-    // Supprimer un trainer
+    // Supprimer un formateur
     @DeleteMapping("/{groupId}/remove-trainer/{trainerId}")
     public ResponseEntity<?> removeTrainerFromGroup(
             @PathVariable Long groupId,
@@ -144,15 +166,30 @@ public class GroupeController {
         Groupe group = groupeRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
+        User trainer = userRepository.findById(trainerId)
+                .orElseThrow(() -> new RuntimeException("Trainer not found"));
+
+        // Retirer le trainer
         group.setTrainers(
                 group.getTrainers().stream()
                         .filter(t -> !t.getId().equals(trainerId))
                         .toList()
         );
+
+        // 🔥 Libérer une place
+        group.setTrainerCapacity(group.getTrainerCapacity() + 1);
+
+        // ⚡ Supprimer le lien du côté formateur
+        if (trainer.getTrainerGroupes() != null) {
+            trainer.getTrainerGroupes().remove(group);
+            userRepository.save(trainer);
+        }
+
         groupeRepository.save(group);
 
-        return ResponseEntity.ok("Trainer removed successfully");
+        return ResponseEntity.ok(Map.of("message", "Trainer removed successfully"));
     }
+
     @GetMapping("/available-students")
     public ResponseEntity<List<User>> getAvailableStudents(@RequestParam String specialite) {
         return ResponseEntity.ok(userRepository.findAvailableStudentsBySpecialite(specialite));

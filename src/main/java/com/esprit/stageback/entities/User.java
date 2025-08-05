@@ -1,7 +1,6 @@
 package com.esprit.stageback.entities;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -9,6 +8,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.Collection;
 import java.util.List;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -29,47 +29,39 @@ public class User {
 
     private String profilePicture;
 
-    // ✅ nouvelle colonne
     private String specialite;
 
+    // Relations avec emploi du temps, cours, notes et présences
     @OneToMany(mappedBy = "formateur")
-    @JsonIgnore
+    @JsonIgnoreProperties({"formateur"})
     private List<EmploiTemps> emploisDuTemps;
 
     @OneToMany(mappedBy = "formateur")
-    @JsonIgnore
+    @JsonIgnoreProperties({"formateur"})
     private List<Cours> coursDonnes;
 
     @OneToMany(mappedBy = "etudiant")
+    @JsonIgnoreProperties({"etudiant"})
     private List<Note> notes;
 
     @OneToMany(mappedBy = "etudiant")
+    @JsonIgnoreProperties({"etudiant"})
     private List<Presence> presences;
-/*
-    @ManyToOne
+
+    // ✅ Student -> Groupe (ManyToOne)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "groupe_id")
+    @JsonIgnoreProperties({"students", "trainers"})
     private Groupe studentGroupe;
 
-    @ManyToMany
+    // ✅ Trainer -> Groupes (ManyToMany)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "trainer_groupes",
             joinColumns = @JoinColumn(name = "trainer_id"),
             inverseJoinColumns = @JoinColumn(name = "groupe_id")
     )
-    private List<Groupe> trainerGroupes;
-*/
-@ManyToOne
-@JoinColumn(name = "groupe_id")
-@JsonBackReference("groupe-students")
-private Groupe studentGroupe;
-
-    @ManyToMany
-    @JoinTable(
-            name = "trainer_groupes",
-            joinColumns = @JoinColumn(name = "trainer_id"),
-            inverseJoinColumns = @JoinColumn(name = "groupe_id")
-    )
-    @JsonBackReference("groupe-trainers")
+    @JsonIgnoreProperties({"students", "trainers"})
     private List<Groupe> trainerGroupes;
 
     @Enumerated(EnumType.STRING)
@@ -86,6 +78,7 @@ private Groupe studentGroupe;
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
     }
+
     @Override
     public String toString() {
         return "User{id=" + id +
@@ -94,6 +87,4 @@ private Groupe studentGroupe;
                 ", role=" + role +
                 '}';
     }
-
 }
-

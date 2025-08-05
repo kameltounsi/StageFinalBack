@@ -102,6 +102,7 @@ public class AuthController {
             return ResponseEntity.ok(false);
         }
     }
+/*
    // @PreAuthorize("hasRole('ADMIN')")
    @PreAuthorize("permitAll()")
 
@@ -109,6 +110,35 @@ public class AuthController {
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userRepository.findAll());
     }
+*/
+@GetMapping("/all")
+public ResponseEntity<List<UserDTO>> getAllUsers() {
+    List<User> users = userRepository.findAllWithGroups();
+
+    List<UserDTO> userDTOs = users.stream().map(user -> {
+        String studentClass = (user.getRole() == Roles.STUDENT && user.getStudentGroupe() != null)
+                ? user.getStudentGroupe().getNom()
+                : "No class assigned";
+
+        List<String> trainerClasses = (user.getRole() == Roles.TRAINER && user.getTrainerGroupes() != null)
+                ? user.getTrainerGroupes().stream().map(Groupe::getNom).toList()
+                : List.of();
+
+        return new UserDTO(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole().name(),
+                user.getProfilePicture(),
+                studentClass,
+                trainerClasses
+        );
+    }).toList();
+
+    return ResponseEntity.ok(userDTOs);
+}
+
+
 
 
     @PutMapping("/{id}/role")
@@ -167,7 +197,7 @@ public ResponseEntity<Map<String, String>> addUser(
         @RequestParam("password") String password,
         @RequestParam(value = "image", required = false) MultipartFile image,
         @RequestParam("role") Roles role,
-        @RequestParam(value = "specialite", required = false) String specialite, // 🔹 ajouté
+        @RequestParam(value = "specialite", required = false) String specialite,
         @RequestParam(value = "groupeId", required = false) Long groupeId, // pour STUDENT
         @RequestParam(value = "groupeIds", required = false) List<Long> groupeIds, // pour TRAINER
         @RequestParam(value = "requestId", required = false) Long requestId,
@@ -175,7 +205,7 @@ public ResponseEntity<Map<String, String>> addUser(
         @RequestParam(value = "profilePictureUrl", required = false) String profilePictureUrl
 ) {
     try {
-        // 🔹 1. Gestion de l’image
+        // 1. Upload image
         String imageUrl = null;
         if (image != null && !image.isEmpty()) {
             imageUrl = cloudinaryService.uploadFile(image);
@@ -183,30 +213,52 @@ public ResponseEntity<Map<String, String>> addUser(
             imageUrl = profilePictureUrl;
         }
 
-        // 🔹 2. Création du nouvel utilisateur
+        // 2. Créer utilisateur
         User newUser = User.builder()
                 .fullName(fullname)
                 .email(email)
                 .password(passwordEncoder.encode(password))
                 .profilePicture(imageUrl)
                 .role(role)
-                .specialite(specialite) // 🔹 on enregistre la spécialité
+                .specialite(specialite)
                 .build();
 
-        // 🔹 3. Affectation selon le rôle
+        // 3. Affectation selon rôle
         if (role == Roles.STUDENT && groupeId != null) {
             Groupe groupe = groupeRepository.findById(groupeId)
                     .orElseThrow(() -> new RuntimeException("Groupe not found"));
+
+            if (groupe.getStudentCapacity() <= 0) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "No student capacity left in this group"));
+            }
+
             newUser.setStudentGroupe(groupe);
+            // décrémenter la capacité
+            groupe.setStudentCapacity(groupe.getStudentCapacity() - 1);
+            groupeRepository.save(groupe);
+
         } else if (role == Roles.TRAINER && groupeIds != null && !groupeIds.isEmpty()) {
             List<Groupe> groupes = groupeRepository.findAllById(groupeIds);
+
+            for (Groupe groupe : groupes) {
+                if (groupe.getTrainerCapacity() <= 0) {
+                    return ResponseEntity.badRequest()
+                            .body(Map.of("error", "No trainer capacity left in group " + groupe.getNom()));
+                }
+
+                // décrémenter la capacité
+                groupe.setTrainerCapacity(groupe.getTrainerCapacity() - 1);
+                groupeRepository.save(groupe);
+            }
+
             newUser.setTrainerGroupes(groupes);
         }
 
-        // 🔹 4. Sauvegarde
+        // 4. Sauvegarde utilisateur
         userRepository.save(newUser);
 
-        // 🔹 5. Email de bienvenue
+        // 5. Envoi email
         Locale locale = new Locale(lang);
         emailService.sendWelcomeEmail(
                 newUser.getEmail(),
@@ -216,7 +268,7 @@ public ResponseEntity<Map<String, String>> addUser(
                 locale
         );
 
-        // 🔹 6. Mise à jour de la requête si elle existe
+        // 6. Update request si elle existe
         if (requestId != null) {
             StudentRequest req = requestRepository.findById(requestId)
                     .orElseThrow(() -> new RuntimeException("Request not found"));
@@ -224,7 +276,7 @@ public ResponseEntity<Map<String, String>> addUser(
             requestRepository.save(req);
         }
 
-        // 🔹 7. Réponse
+        // 7. Réponse
         Map<String, String> response = new HashMap<>();
         response.put("message", "User registered successfully!");
         response.put("userEmail", newUser.getEmail());

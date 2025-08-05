@@ -1,13 +1,9 @@
 package com.esprit.stageback.entities;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import java.time.LocalDate;
-import java.util.Collection;
 import java.util.List;
 
 @Data
@@ -16,37 +12,30 @@ import java.util.List;
 @Builder
 @Entity
 public class Groupe {
-    @Id @GeneratedValue
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String nom;
-    private String specialite; // Informatique, BTP, Commerce...
+    private String specialite; // Exemple: Informatique, BTP, Commerce...
 
-    // ✅ Nouvelle capacité par défaut
+    // ✅ Capacités par défaut
     private int trainerCapacity = 2;
     private int studentCapacity = 25;
-/*
-    @OneToMany(mappedBy = "studentGroupe")
-    //@JsonIgnore
-    @JsonManagedReference // ⚡ au lieu de JsonIgnore
 
+    // Liste des étudiants
+    @OneToMany(mappedBy = "studentGroupe", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JsonIgnoreProperties({"studentGroupe", "trainerGroupes", "notes", "presences", "emploisDuTemps", "coursDonnes"})
     private List<User> students;
 
-    @ManyToMany(mappedBy = "trainerGroupes")
-    //@JsonIgnore
-    @JsonManagedReference // ⚡ au lieu de JsonIgnore
-
-    private List<User> trainers;
-*/
-@OneToMany(mappedBy = "studentGroupe", fetch = FetchType.LAZY)
-@JsonManagedReference("groupe-students")
-private List<User> students;
-
-    @ManyToMany(mappedBy = "trainerGroupes", fetch = FetchType.LAZY)
-    @JsonManagedReference("groupe-trainers")
+    // Liste des formateurs
+    @ManyToMany(mappedBy = "trainerGroupes", fetch = FetchType.EAGER)
+    @JsonIgnoreProperties({"studentGroupe", "trainerGroupes", "notes", "presences", "emploisDuTemps", "coursDonnes"})
     private List<User> trainers;
 
-    @OneToMany(mappedBy = "groupe")
-    @JsonManagedReference // ⚡ au lieu de JsonIgnore
+    // Emplois du temps liés au groupe
+    @OneToMany(mappedBy = "groupe", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"groupe", "formateur"})
     private List<EmploiTemps> emplois;
 }

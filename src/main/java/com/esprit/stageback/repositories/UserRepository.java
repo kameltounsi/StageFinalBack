@@ -23,4 +23,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // Trainers avec moins de 4 groupes
     @Query("SELECT u FROM User u WHERE u.role = 'TRAINER' AND size(u.trainerGroupes) < 4 AND u.specialite = :specialite")
     List<User> findAvailableTrainersBySpecialite(String specialite);
+    @Query("SELECT DISTINCT u FROM User u " +
+            "LEFT JOIN FETCH u.studentGroupe " +
+            "LEFT JOIN FETCH u.trainerGroupes")
+    List<User> findAllWithGroups();
+
 }

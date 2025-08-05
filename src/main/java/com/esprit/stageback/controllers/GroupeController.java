@@ -1,12 +1,19 @@
 package com.esprit.stageback.controllers;
 
 import com.esprit.stageback.entities.Groupe;
+import com.esprit.stageback.entities.User;
+import com.esprit.stageback.repositories.GroupeRepository;
+import com.esprit.stageback.repositories.UserRepository;
 import com.esprit.stageback.services.GroupeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/groups")
@@ -14,7 +21,8 @@ import java.util.List;
 public class GroupeController {
 
     private final GroupeService groupeService;
-
+    private final GroupeRepository groupeRepository;
+    private final UserRepository userRepository;
     @PostMapping("/add")
     public ResponseEntity<Groupe> addGroup(
             @RequestParam String specialite,
@@ -49,4 +57,110 @@ public class GroupeController {
     ) {
         return groupeService.findGroupsBySpecialiteAndLevel(specialite, level);
     }
+    @PostMapping("/{groupId}/add-student/{studentId}")
+    public ResponseEntity<?> addStudentToGroup(
+            @PathVariable Long groupId,
+            @PathVariable Long studentId) {
+        Groupe group = groupeRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        if (!group.getSpecialite().equals(student.getSpecialite())) {
+            return ResponseEntity.badRequest().body("Speciality does not match group");
+        }
+
+        if (group.getStudentCapacity() <= 0) {
+            return ResponseEntity.badRequest().body("No more student capacity available");
+        }
+
+        student.setStudentGroupe(group);
+        userRepository.save(student);
+
+        group.setStudentCapacity(group.getStudentCapacity() - 1);
+        groupeRepository.save(group);
+
+        return ResponseEntity.ok(group); // retourne group mis à jour
+    }
+    @PostMapping("/{groupId}/add-trainer/{trainerId}")
+    public ResponseEntity<Map<String, String>> addTrainerToGroup(
+            @PathVariable Long groupId,
+            @PathVariable Long trainerId) {
+        Groupe group = groupeRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+        User trainer = userRepository.findById(trainerId)
+                .orElseThrow(() -> new RuntimeException("Trainer not found"));
+
+        if (!group.getSpecialite().equals(trainer.getSpecialite())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Speciality does not match group"));
+        }
+
+        if (group.getTrainers().size() >= group.getTrainerCapacity()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Group already has 2 trainers"));
+        }
+
+        group.getTrainers().add(trainer);
+        if (trainer.getTrainerGroupes() == null) {
+            trainer.setTrainerGroupes(new ArrayList<>());
+        }
+        trainer.getTrainerGroupes().add(group);
+
+        groupeRepository.save(group);
+        userRepository.save(trainer);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Trainer added successfully");
+        return ResponseEntity.ok(response);
+    }
+
+
+
+
+    // Supprimer un étudiant
+    @DeleteMapping("/{groupId}/remove-student/{studentId}")
+    public ResponseEntity<?> removeStudentFromGroup(
+            @PathVariable Long groupId,
+            @PathVariable Long studentId) {
+        Groupe group = groupeRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        group.setStudents(
+                group.getStudents().stream()
+                        .filter(s -> !s.getId().equals(studentId))
+                        .toList()
+        );
+        groupeRepository.save(group);
+
+        return ResponseEntity.ok("Student removed successfully");
+    }
+
+
+
+    // Supprimer un trainer
+    @DeleteMapping("/{groupId}/remove-trainer/{trainerId}")
+    public ResponseEntity<?> removeTrainerFromGroup(
+            @PathVariable Long groupId,
+            @PathVariable Long trainerId) {
+        Groupe group = groupeRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        group.setTrainers(
+                group.getTrainers().stream()
+                        .filter(t -> !t.getId().equals(trainerId))
+                        .toList()
+        );
+        groupeRepository.save(group);
+
+        return ResponseEntity.ok("Trainer removed successfully");
+    }
+    @GetMapping("/available-students")
+    public ResponseEntity<List<User>> getAvailableStudents(@RequestParam String specialite) {
+        return ResponseEntity.ok(userRepository.findAvailableStudentsBySpecialite(specialite));
+    }
+
+    @GetMapping("/available-trainers")
+    public ResponseEntity<List<User>> getAvailableTrainers(@RequestParam String specialite) {
+        return ResponseEntity.ok(userRepository.findAvailableTrainersBySpecialite(specialite));
+    }
+
 }

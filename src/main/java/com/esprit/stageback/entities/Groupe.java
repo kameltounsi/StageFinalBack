@@ -1,5 +1,6 @@
 package com.esprit.stageback.entities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -24,16 +25,28 @@ public class Groupe {
     // ✅ Nouvelle capacité par défaut
     private int trainerCapacity = 2;
     private int studentCapacity = 25;
-
+/*
     @OneToMany(mappedBy = "studentGroupe")
-    @JsonIgnore
+    //@JsonIgnore
+    @JsonManagedReference // ⚡ au lieu de JsonIgnore
+
     private List<User> students;
 
     @ManyToMany(mappedBy = "trainerGroupes")
-    @JsonIgnore
+    //@JsonIgnore
+    @JsonManagedReference // ⚡ au lieu de JsonIgnore
+
+    private List<User> trainers;
+*/
+@OneToMany(mappedBy = "studentGroupe", fetch = FetchType.LAZY)
+@JsonManagedReference("groupe-students")
+private List<User> students;
+
+    @ManyToMany(mappedBy = "trainerGroupes", fetch = FetchType.LAZY)
+    @JsonManagedReference("groupe-trainers")
     private List<User> trainers;
 
     @OneToMany(mappedBy = "groupe")
-    @JsonIgnore
+    @JsonManagedReference // ⚡ au lieu de JsonIgnore
     private List<EmploiTemps> emplois;
 }

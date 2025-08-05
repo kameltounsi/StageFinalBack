@@ -249,4 +249,13 @@ public ResponseEntity<Map<String, String>> addUser(
         response.put("exists", exists);
         return ResponseEntity.ok(response);
     }
+    @GetMapping("/students")
+    public List<User> getStudentsBySpecialite(@RequestParam String specialite) {
+        return userRepository.findByRoleAndSpecialite(Roles.STUDENT, specialite);
+    }
+
+    @GetMapping("/trainers")
+    public List<User> getTrainersBySpecialite(@RequestParam String specialite) {
+        return userRepository.findByRoleAndSpecialite(Roles.TRAINER, specialite);
+    }
 }

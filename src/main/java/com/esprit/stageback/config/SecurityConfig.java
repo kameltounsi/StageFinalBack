@@ -35,9 +35,14 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         //.requestMatchers("/api/auth/add-user").hasRole("ADMIN")
+                        .requestMatchers("/api/groups/available-students/**").permitAll()
+                        .requestMatchers("/api/groups/available-trainers/**").permitAll()
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/api/groups/**",
+                                "/api/auth/students",
+                                "/api/auth/trainers",
+
                                 "/api/requests/**",
                                 "/v3/api-docs/**",               // Swagger
                                 "/swagger-ui/**",

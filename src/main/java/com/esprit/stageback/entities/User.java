@@ -1,5 +1,6 @@
 package com.esprit.stageback.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -44,7 +45,7 @@ public class User {
 
     @OneToMany(mappedBy = "etudiant")
     private List<Presence> presences;
-
+/*
     @ManyToOne
     @JoinColumn(name = "groupe_id")
     private Groupe studentGroupe;
@@ -55,6 +56,20 @@ public class User {
             joinColumns = @JoinColumn(name = "trainer_id"),
             inverseJoinColumns = @JoinColumn(name = "groupe_id")
     )
+    private List<Groupe> trainerGroupes;
+*/
+@ManyToOne
+@JoinColumn(name = "groupe_id")
+@JsonBackReference("groupe-students")
+private Groupe studentGroupe;
+
+    @ManyToMany
+    @JoinTable(
+            name = "trainer_groupes",
+            joinColumns = @JoinColumn(name = "trainer_id"),
+            inverseJoinColumns = @JoinColumn(name = "groupe_id")
+    )
+    @JsonBackReference("groupe-trainers")
     private List<Groupe> trainerGroupes;
 
     @Enumerated(EnumType.STRING)

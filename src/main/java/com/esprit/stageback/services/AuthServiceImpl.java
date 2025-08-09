@@ -1,5 +1,6 @@
 package com.esprit.stageback.services;
 import com.esprit.stageback.dto.*;
+import com.esprit.stageback.entities.EmploiTemps;
 import com.esprit.stageback.entities.Roles;
 import com.esprit.stageback.entities.Status;
 import com.esprit.stageback.entities.User;
@@ -16,10 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -71,4 +69,9 @@ public class AuthServiceImpl implements AuthService{
         userRepository.save(user);
         return ResponseEntity.ok().build();
     }
+    public List<User> findTrainersByGroupe(Long groupeId) {
+        return userRepository.findTrainersByGroupeId(groupeId);
+    }
+
+
 }

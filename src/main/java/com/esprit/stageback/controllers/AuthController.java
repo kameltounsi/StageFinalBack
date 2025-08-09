@@ -11,10 +11,12 @@ import com.esprit.stageback.services.AuthService;
 import com.esprit.stageback.services.CloudinaryService;
 import com.esprit.stageback.services.EmailService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,7 +33,8 @@ import static com.esprit.stageback.entities.RequestStatus.ACCEPTED;
 @CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 public class AuthController {
 
-    public AuthController(UserRepository userRepository, GroupeRepository groupeRepository, StudentRequestRepository requestRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthService authService, CloudinaryService cloudinaryService, EmailService emailService) {
+    private final UserDetailsService userDetailsService;
+    public AuthController(UserRepository userRepository, GroupeRepository groupeRepository, StudentRequestRepository requestRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthService authService, CloudinaryService cloudinaryService, EmailService emailService, @Qualifier("userDetailsService") UserDetailsService userDetailsService) {
         this.userRepository = userRepository;
         this.groupeRepository = groupeRepository;
         this.requestRepository = requestRepository;
@@ -40,6 +43,7 @@ public class AuthController {
         this.authService = authService;
         this.cloudinaryService = cloudinaryService;
         this.emailService = emailService;
+        this.userDetailsService = userDetailsService;
     }
     private final UserRepository userRepository;
     private final GroupeRepository groupeRepository;
@@ -309,5 +313,9 @@ public ResponseEntity<Map<String, String>> addUser(
     @GetMapping("/trainers")
     public List<User> getTrainersBySpecialite(@RequestParam String specialite) {
         return userRepository.findByRoleAndSpecialite(Roles.TRAINER, specialite);
+    }
+    @GetMapping("/trainers/by-groupe/{groupeId}")
+    public ResponseEntity<List<User>> getTrainersByGroupe(@PathVariable Long groupeId) {
+        return ResponseEntity.ok(authService.findTrainersByGroupe(groupeId)); // ✅ Sur l'instance
     }
 }

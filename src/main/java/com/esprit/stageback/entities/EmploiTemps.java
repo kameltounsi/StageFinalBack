@@ -1,14 +1,12 @@
 package com.esprit.stageback.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.List;
+import java.time.LocalTime;
 
 @Data
 @NoArgsConstructor
@@ -16,18 +14,22 @@ import java.util.List;
 @Builder
 @Entity
 public class EmploiTemps {
-    @Id @GeneratedValue
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ important pour MySQL
     private Long id;
 
-    private LocalDate date;
-    private String heure;
-    private String salle;
+    private LocalDate date;           // Jour du cours
+    private LocalTime heureDebut;     // Heure de début
+    private LocalTime heureFin;       // Heure de fin
+    private String salle;             // Salle du cours
+
+    private String matiere;           // Matière (lié à la spécialité)
 
     @ManyToOne
-    @JsonIgnore
-
+    @JsonIgnoreProperties({"studentGroupe", "trainerGroupes", "password", "role"}) // on ignore 'role'
     private User formateur;
 
     @ManyToOne
-    private Groupe groupe;
+    @JoinColumn(name = "groupe_id")
+    private Groupe groupe;            // Groupe (classe)
 }

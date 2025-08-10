@@ -17,17 +17,6 @@ import static com.esprit.stageback.mappers.EmploiTempsMapper.toDTO;
 public class EmploiTempsController {
 
     private final EmploiTempsService emploiTempsService;
-/*
-    // ➕ Ajouter un emploi du temps pour un groupe
-    @PostMapping("/{groupeId}/add")
-    public ResponseEntity<EmploiTemps> ajouterEmploi(
-            @PathVariable Long groupeId,
-            @RequestBody EmploiTemps emploiTemps
-    ) {
-        return ResponseEntity.ok(emploiTempsService.ajouterEmploi(groupeId, emploiTemps));
-    }
-*/
-
     @PostMapping("/{groupeId}/add")
     public ResponseEntity<EmploiTempsDTO> ajouterEmploi(
             @PathVariable Long groupeId,
@@ -36,7 +25,6 @@ public class EmploiTempsController {
         EmploiTemps saved = emploiTempsService.ajouterEmploi(groupeId, emploiTemps);
         return ResponseEntity.status(201).body(toDTO(saved));
     }
-    // 📅 Récupérer le planning d’un groupe
     @GetMapping("/groupe/{groupeId}")
     public ResponseEntity<List<EmploiTemps>> getPlanningByGroupe(@PathVariable Long groupeId) {
         return ResponseEntity.ok(emploiTempsService.getPlanningByGroupe(groupeId));
@@ -50,13 +38,6 @@ public class EmploiTempsController {
     ) {
         return ResponseEntity.ok(emploiTempsService.getPlanningBetweenDates(startDate, endDate));
     }
-
-  /*  // ❌ Supprimer un emploi du temps
-    @DeleteMapping("/{emploiId}/delete")
-    public ResponseEntity<String> deleteEmploi(@PathVariable Long emploiId) {
-        emploiTempsService.supprimerEmploi(emploiId);
-        return ResponseEntity.ok("Emploi du temps supprimé avec succès !");
-    }*/
   @DeleteMapping("/{emploiId}/delete")
   public ResponseEntity<Void> deleteEmploi(@PathVariable Long emploiId) {
       emploiTempsService.supprimerEmploi(emploiId);

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Emploi du temps</title>
+    <style>
+        /* ---------- Page &amp; en-têtes/pieds ---------- */
+        @page{
+            size:A4;
+            margin:14mm 12mm 16mm 12mm;
+            @top-center{content:element(doc-header);}
+            @bottom-left{content:element(doc-footer-left);}
+            @bottom-right{content:"Page " counter(page) " / " counter(pages);}
+        }
+
+        body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#1c1c1c;}
+
+        /* ---------- Header (running) ---------- */
+        .doc-header{position:running(doc-header);font-size:12px;margin-bottom:8px;border-bottom:2px solid #E5E7EB;padding-bottom:6px;}
+        .brandline{height:6px;background:#E11D48;border-radius:4px;margin-bottom:8px;}
+        .header-row{width:100%;border-collapse:collapse;}
+        .header-row td{vertical-align:middle;}
+        .h-left{width:25%;}
+        .h-mid{text-align:center;width:50%;}
+        .h-right{text-align:right;width:25%;}
+        .title{color:#E11D48;font-weight:800;letter-spacing:.2px;font-size:18px;}
+        .meta{color:#374151;font-size:10.5px;}
+
+        /* ---------- Footer (running) ---------- */
+        .doc-footer-left{position:running(doc-footer-left);font-size:10px;color:#6B7280;border-top:1px solid #E5E7EB;padding-top:4px;margin-top:6px;}
+
+        /* ---------- Tableau ---------- */
+        table.planning{width:100%;border-collapse:collapse;table-layout:fixed;}
+        thead{display:table-header-group;}
+        tfoot{display:table-footer-group;}
+        th,td{border:1px solid #E5E7EB;padding:8px 6px;vertical-align:top;}
+        thead th{background:#F3F4F6;color:#111827;font-weight:700;text-align:center;font-size:11px;}
+        tbody tr:nth-child(even) td{background:#FAFAFA;}
+
+        .col-day{width:22%;}
+        .col-slot{width:19.5%;}
+
+        .day-name{text-transform:uppercase;letter-spacing:.4px;color:#374151;font-weight:700;}
+        .day-date{color:#6B7280;font-size:10px;margin-top:2px;}
+
+        /* ---------- Cartes ---------- */
+        .card{border:1px solid #D1D5DB;border-radius:6px;padding:6px;margin-bottom:6px;background:#fff;page-break-inside:avoid;}
+        .chip-time{display:inline-block;font-size:10px;font-weight:700;color:#991B1B;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:999px;padding:2px 8px;margin-bottom:6px;}
+        .subject{color:#1D4ED8;font-weight:700;margin:2px 0 4px 0;font-size:11px;}
+        .line{font-size:10px;color:#374151;}
+        .muted{color:#6B7280;}
+        .badge{display:inline-block;font-size:10px;background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE;border-radius:999px;padding:1px 8px;margin-right:6px;}
+
+        .mb-2{margin-bottom:2px;}
+    </style>
+</head>
+<body>
+
+<!-- En-tête répété -->
+<div class="doc-header">
+    <div class="brandline"></div>
+    <table class="header-row">
+        <tr>
+            <td class="h-left">
+                
+            </td>
+            <td class="h-mid">
+                <div class="title">Emploi du temps</div>
+            </td>
+            <td class="h-right">
+                <div class="meta">
+                    Du <b>11/08/2025</b>
+                    au <b>17/08/2025</b>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class="h-left meta">
+                Groupe&#160;: <b>MAD A</b>
+            </td>
+            <td class="h-mid meta">&#8226;</td>
+            <td class="h-right meta">
+                Sp&eacute;cialit&eacute;&#160;: <b>Mobile Application Development</b>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<!-- Planning -->
+<table class="planning">
+    <thead>
+    <tr>
+        <th class="col-day">Jour</th>
+        <th class="col-slot">09H:00 10H:30</th>
+        <th class="col-slot">10H:45 12H:15</th>
+        <th class="col-slot">13H:30 15H:00</th>
+        <th class="col-slot">15H:15 16H:45</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td class="col-day">
+            <div class="day-name">lundi</div>
+            <div class="day-date">11/08/2025</div>
+        </td>
+
+        <!-- Slot 0 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 1 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 2 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 3 -->
+        <td class="col-slot">
+            
+        </td>
+
+    </tr>
+    <tr>
+        <td class="col-day">
+            <div class="day-name">mardi</div>
+            <div class="day-date">12/08/2025</div>
+        </td>
+
+        <!-- Slot 0 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 1 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 2 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 3 -->
+        <td class="col-slot">
+            
+        </td>
+
+    </tr>
+    <tr>
+        <td class="col-day">
+            <div class="day-name">mercredi</div>
+            <div class="day-date">13/08/2025</div>
+        </td>
+
+        <!-- Slot 0 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 1 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 2 -->
+        <td class="col-slot">
+            <div>
+                <div class="card">
+                    <div class="chip-time">15:00 - 17:00</div>
+                    <div class="subject">Android (Kotlin/Java)</div>
+                    <div class="line mb-2">
+                        <span class="muted">Formateur&#160;:</span>
+                        <b>Aziz Tounsi</b>
+                    </div>
+                    <div class="line">
+                        <span class="badge">S302</span>
+                        <span class="muted">Groupe&#160;:</span>
+                        <b>MAD A</b>
+                    </div>
+                </div>
+            </div>
+        </td>
+
+        <!-- Slot 3 -->
+        <td class="col-slot">
+            <div>
+                <div class="card">
+                    <div class="chip-time">15:00 - 17:00</div>
+                    <div class="subject">Android (Kotlin/Java)</div>
+                    <div class="line mb-2">
+                        <span class="muted">Formateur&#160;:</span>
+                        <b>Aziz Tounsi</b>
+                    </div>
+                    <div class="line">
+                        <span class="badge">S302</span>
+                        <span class="muted">Groupe&#160;:</span>
+                        <b>MAD A</b>
+                    </div>
+                </div>
+            </div>
+        </td>
+
+    </tr>
+    <tr>
+        <td class="col-day">
+            <div class="day-name">jeudi</div>
+            <div class="day-date">14/08/2025</div>
+        </td>
+
+        <!-- Slot 0 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 1 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 2 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 3 -->
+        <td class="col-slot">
+            
+        </td>
+
+    </tr>
+    <tr>
+        <td class="col-day">
+            <div class="day-name">vendredi</div>
+            <div class="day-date">15/08/2025</div>
+        </td>
+
+        <!-- Slot 0 -->
+        <td class="col-slot">
+            <div>
+                <div class="card">
+                    <div class="chip-time">08:00 - 10:00</div>
+                    <div class="subject">Cross-platform (Flutter)</div>
+                    <div class="line mb-2">
+                        <span class="muted">Formateur&#160;:</span>
+                        <b>Aziz Tounsi</b>
+                    </div>
+                    <div class="line">
+                        <span class="badge">S303</span>
+                        <span class="muted">Groupe&#160;:</span>
+                        <b>MAD A</b>
+                    </div>
+                </div>
+            </div>
+        </td>
+
+        <!-- Slot 1 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 2 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 3 -->
+        <td class="col-slot">
+            
+        </td>
+
+    </tr>
+    <tr>
+        <td class="col-day">
+            <div class="day-name">samedi</div>
+            <div class="day-date">16/08/2025</div>
+        </td>
+
+        <!-- Slot 0 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 1 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 2 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 3 -->
+        <td class="col-slot">
+            
+        </td>
+
+    </tr>
+    <tr>
+        <td class="col-day">
+            <div class="day-name">dimanche</div>
+            <div class="day-date">17/08/2025</div>
+        </td>
+
+        <!-- Slot 0 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 1 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 2 -->
+        <td class="col-slot">
+            
+        </td>
+
+        <!-- Slot 3 -->
+        <td class="col-slot">
+            
+        </td>
+
+    </tr>
+    </tbody>
+</table>
+
+<!-- Pied répété -->
+<div class="doc-footer-left">
+    G&eacute;n&eacute;r&eacute; le&#160;<span>12/08/2025 11:29</span>
+</div>
+
+</body>
+</html>

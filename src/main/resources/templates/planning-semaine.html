@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Planning hebdomadaire</title>
+    <style>
+        @page { size: A4; margin: 18mm 15mm; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; }
+        h1 { font-size: 20px; margin: 0 0 4px; }
+        .meta { font-size: 11px; color: #666; margin-bottom: 14px; }
+        .meta b { color: #111; }
+
+        /* cartes jour */
+        .day { border: 1px solid #e3e3e3; border-radius: 8px; padding: 10px 12px; margin: 10px 0; }
+        .day-title { font-weight: 600; margin-bottom: 6px; }
+        .empty { text-align: center; color: #777; font-style: italic; padding: 10px 0; }
+
+        /* table des séances */
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px 6px; border-bottom: 1px solid #eee; }
+        th { text-align: left; background: #fafafa; font-weight: 600; }
+        .row { page-break-inside: avoid; }
+
+        /* footer */
+        .footer { margin-top: 14px; font-size: 10px; color: #777; }
+    </style>
+</head>
+<body>
+
+<h1>Planning hebdomadaire</h1>
+<div class="meta">
+    Du <span th:text="${#temporals.format(start, 'dd/MM/yyyy')}"></span>
+    au <span th:text="${#temporals.format(end, 'dd/MM/yyyy')}"></span><br/>
+    Groupe : <b th:text="${groupe.nom}">N/A</b>
+    • Spécialité : <b th:text="${groupe.specialite}">N/A</b>
+</div>
+
+<!-- Parcours des jours -->
+<div th:each="d, st : ${days}"
+     th:with="list=${sessionsPerDay[st.index]}">
+
+    <div class="day">
+        <div class="day-title"
+             th:text="${#temporals.format(d, 'EEEE dd/MM/yyyy')}">Lundi 01/01/2025</div>
+
+        <!-- Si aucune séance -->
+        <div class="empty" th:if="${list == null or #lists.isEmpty(list)}">
+            Aucune séance.
+        </div>
+
+        <!-- Sinon, tableau des séances -->
+        <table th:if="${list != null and !#lists.isEmpty(list)}">
+            <thead>
+            <tr>
+                <th>Heure</th>
+                <th>Matière</th>
+                <th>Salle</th>
+                <th>Formateur</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr class="row" th:each="s : ${list}">
+                <td>
+                    <span th:text="${s.heureDebut != null ? #temporals.format(s.heureDebut, 'HH:mm') : '--:--'}"></span>
+                    -
+                    <span th:text="${s.heureFin   != null ? #temporals.format(s.heureFin,   'HH:mm') : '--:--'}"></span>
+                </td>
+                <td th:text="${s.matiere}">Matière</td>
+                <td th:text="${s.salle}">Salle</td>
+                <td th:text="${s.formateur != null ? s.formateur.fullName : '—'}">Formateur</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="footer">
+    Généré automatiquement le <span th:text="${now}">01/01/2025 09:00</span>.
+</div>
+
+</body>
+</html>

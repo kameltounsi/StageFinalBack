@@ -39,4 +39,14 @@ public interface EmploiTempsRepository extends JpaRepository<EmploiTemps, Long> 
                                    @Param("formateurId") Long formateurId,
                                    @Param("heureDebut") LocalTime heureDebut,
                                    @Param("heureFin") LocalTime heureFin);
+
+    @Query("""
+           SELECT e FROM EmploiTemps e
+           WHERE e.groupe.id = :groupeId
+             AND e.date BETWEEN :start AND :end
+           ORDER BY e.date ASC, e.heureDebut ASC
+           """)
+    List<EmploiTemps> findPlanning(@Param("groupeId") Long groupeId,
+                                   @Param("start") LocalDate start,
+                                   @Param("end") LocalDate end);
 }

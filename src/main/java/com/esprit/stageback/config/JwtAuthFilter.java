@@ -24,20 +24,40 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserRepository userRepository;
 
+    private static final String[] SWAGGER_WHITELIST = {
+            "/v3/api-docs",         // racine JSON
+            "/v3/api-docs/",
+            "/swagger-ui",
+            "/swagger-ui/",
+            "/swagger-ui.html",
+            // facultatifs si présents
+            "/swagger-resources",
+            "/webjars",
+            "/configuration"
+    };
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+
+        // 1) Laisser passer Swagger + OPTIONS sans toucher au contexte sécurité
+        if (isPreflight(request) || isSwaggerPath(request)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // 2) Ne traiter le JWT que si un header Bearer est présent
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String jwt = authHeader.substring(7);
+
         try {
-            String authHeader = request.getHeader("Authorization");
-            String jwt = null;
-            String userEmail = null;
-
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                jwt = authHeader.substring(7);
-                userEmail = jwtService.extractEmail(jwt); // peut lancer des exceptions JWT
-            }
-
+            String userEmail = jwtService.extractEmail(jwt); // peut lancer exceptions JWT
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 var user = userRepository.findByEmail(userEmail).orElse(null);
                 if (user != null && jwtService.isTokenValid(jwt, user)) {
@@ -48,24 +68,33 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
-
             filterChain.doFilter(request, response);
 
         } catch (ExpiredJwtException ex) {
             writeJsonError(response, 401, "Session expirée. Veuillez vous reconnecter.");
         } catch (SignatureException | MalformedJwtException ex) {
             writeJsonError(response, 401, "Token invalide.");
-        } catch (org.springframework.security.access.AccessDeniedException ex) {
-            writeJsonError(response, 403, "Accès refusé : droits insuffisants.");
-        } catch (Exception ex) {
-            writeJsonError(response, 401, "Authentification requise.");
         }
+    }
+
+    private boolean isPreflight(HttpServletRequest request) {
+        return "OPTIONS".equalsIgnoreCase(request.getMethod());
+    }
+
+    private boolean isSwaggerPath(HttpServletRequest request) {
+        String path = request.getServletPath();
+        for (String p : SWAGGER_WHITELIST) {
+            if (path.equals(p) || path.startsWith(p + "/")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void writeJsonError(HttpServletResponse res, int status, String message) throws IOException {
         if (res.isCommitted()) return;
         res.setStatus(status);
         res.setContentType("application/json;charset=UTF-8");
-        res.getWriter().write("{\"message\":\"" + message.replace("\"","\\\"") + "\"}");
+        res.getWriter().write("{\"message\":\"" + message.replace("\"", "\\\"") + "\"}");
     }
 }

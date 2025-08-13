@@ -102,17 +102,31 @@ public class SecurityConfig {
         provider.setPasswordEncoder(appConfig.passwordEncoder());
         return provider;
     }
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+
+        // Front Angular en dev
         configuration.setAllowedOriginPatterns(List.of("http://localhost:4200"));
+
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization","Content-Type"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+
+        // Autoriser tous les en-têtes (incl. X-Skip-Auth-Redirect, etc.)
+        configuration.setAllowedHeaders(List.of("*"));
+
+        // >>> EXPOSE "Content-Disposition" pour que Angular puisse lire le nom de fichier
+        configuration.setExposedHeaders(List.of(
+                "Content-Disposition",
+                "Authorization",
+                "Content-Type",
+                "Content-Length"
+        ));
+
         configuration.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
+
 }

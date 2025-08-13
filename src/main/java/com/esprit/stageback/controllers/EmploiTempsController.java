@@ -1,15 +1,26 @@
 package com.esprit.stageback.controllers;
 
 import com.esprit.stageback.entities.EmploiTemps;
+import com.esprit.stageback.entities.Groupe;
+import com.esprit.stageback.repositories.GroupeRepository;
 import com.esprit.stageback.services.EmploiTempsService;
 import com.esprit.stageback.services.PlanningPdfService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
+import java.util.NoSuchElementException;
+
 import com.esprit.stageback.dto.EmploiTempsDTO;
 import static com.esprit.stageback.mappers.EmploiTempsMapper.toDTO;
 @RestController
@@ -19,6 +30,7 @@ public class EmploiTempsController {
 
     private final EmploiTempsService emploiTempsService;
     private final PlanningPdfService pdfService;
+    private final GroupeRepository groupeRepository;
     @PostMapping("/{groupeId}/add")
     public ResponseEntity<EmploiTempsDTO> ajouterEmploi(
             @PathVariable Long groupeId,
@@ -61,7 +73,7 @@ public class EmploiTempsController {
                 .body(pdf);
     }
 */
-  // EmploiTempsController.java
+/*
   @GetMapping(value = "/groupe/{groupeId}/pdf", produces = "application/pdf")
   public ResponseEntity<byte[]> exportPlanningPdf(
           @PathVariable Long groupeId,
@@ -75,6 +87,44 @@ public class EmploiTempsController {
               .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
               .body(pdf); // produces=application/pdf fait déjà le bon Content-Type
   }
+*/
+  @GetMapping(value = "/groupe/{groupeId}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+  public ResponseEntity<byte[]> exportPlanningPdf(
+          @PathVariable Long groupeId,
+          @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+          @RequestParam("endDate")   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
+      byte[] pdf = pdfService.buildPlanningPdf(groupeId, startDate, endDate);
+
+      Groupe g = groupeRepository.findById(groupeId)
+              .orElseThrow(() -> new NoSuchElementException("Groupe introuvable"));
+
+      DateTimeFormatter DF = DateTimeFormatter.ofPattern("dd-MM-yyyy", Locale.FRENCH);
+      String raw = "Planning " + g.getNom() + " Semaine du " + DF.format(startDate) + " au " + DF.format(endDate);
+
+      // Nom « sûr » pour les FS (garde espaces, enlève accents et caractères interdits)
+      String safeAscii = toSafeFilename(stripAccents(raw)) + ".pdf";
+      // Variante RFC5987 encodée UTF-8 (pour les navigateurs modernes)
+      String safeUtf8  = URLEncoder.encode(toSafeFilename(raw) + ".pdf", StandardCharsets.UTF_8)
+              .replace("+", "%20");
+
+      String contentDisposition = "attachment; filename=\"" + safeAscii + "\"; filename*=UTF-8''" + safeUtf8;
+
+      return ResponseEntity.ok()
+              .contentType(MediaType.APPLICATION_PDF)
+              .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+              .body(pdf);
+  }
+
+    private static String stripAccents(String s) {
+        return Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+    }
+
+    /** Remplace \ / : * ? " < > | par espace, compacte les espaces. */
+    private static String toSafeFilename(String s) {
+        return s.replaceAll("[\\\\/:*?\"<>|]+", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
 
 }

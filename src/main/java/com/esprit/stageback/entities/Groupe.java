@@ -5,37 +5,34 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.List;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Entity
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Groupe {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     private String nom;
-    private String specialite; // Exemple: Informatique, BTP, Commerce...
-
-    // ✅ Capacités par défaut
+    private String specialite;
     private int trainerCapacity = 2;
     private int studentCapacity = 25;
 
-    // Liste des étudiants
-    @OneToMany(mappedBy = "studentGroupe", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    // Était EAGER → passer en LAZY
+    @OneToMany(mappedBy = "studentGroupe", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ToString.Exclude @EqualsAndHashCode.Exclude
     @JsonIgnoreProperties({"studentGroupe", "trainerGroupes", "notes", "presences", "emploisDuTemps", "coursDonnes"})
     private List<User> students;
 
-    // Liste des formateurs
-    @ManyToMany(mappedBy = "trainerGroupes", fetch = FetchType.EAGER)
+    // Était EAGER → passer en LAZY
+    @ManyToMany(mappedBy = "trainerGroupes", fetch = FetchType.LAZY)
+    @ToString.Exclude @EqualsAndHashCode.Exclude
     @JsonIgnoreProperties({"studentGroupe", "trainerGroupes", "notes", "presences", "emploisDuTemps", "coursDonnes"})
     private List<User> trainers;
 
-    // Emplois du temps liés au groupe
-    @OneToMany(mappedBy = "groupe", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "groupe", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @ToString.Exclude @EqualsAndHashCode.Exclude
     @JsonIgnoreProperties({"groupe", "formateur"})
     private List<EmploiTemps> emplois;
 }

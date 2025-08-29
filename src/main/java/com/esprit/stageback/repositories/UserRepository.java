@@ -14,41 +14,45 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
-    Optional<User> findByEmailIgnoreCase(String email);
+
     boolean existsByEmail(String email);
+    @Query("select u.id from User u where lower(u.email) = lower(:email)")
+    Optional<Long> findIdByEmailIgnoreCase(@Param("email") String email);
+
     List<User> findByRoleAndSpecialite(Roles role, String specialite);
-   /* // Students sans groupe
-    @Query("SELECT u FROM User u WHERE u.role = 'STUDENT' AND u.studentGroupe IS NULL AND u.specialite = :specialite")
-    List<User> findAvailableStudentsBySpecialite(String specialite);
 
-    // Trainers avec moins de 4 groupes
-    @Query("SELECT u FROM User u WHERE u.role = 'TRAINER' AND size(u.trainerGroupes) < 4 AND u.specialite = :specialite")
-    List<User> findAvailableTrainersBySpecialite(String specialite);
-    @Query("SELECT DISTINCT u FROM User u " +
-            "LEFT JOIN FETCH u.studentGroupe " +
-            "LEFT JOIN FETCH u.trainerGroupes")
-    List<User> findAllWithGroups();
-*/
-   // Students sans groupe
-   @Query("SELECT u FROM User u " +
-           "WHERE u.role = 'STUDENT' " +
-           "AND u.studentGroupe IS NULL " +
-           "AND LOWER(TRIM(u.specialite)) = LOWER(TRIM(:specialite))")
-   List<User> findAvailableStudentsBySpecialite(@Param("specialite") String specialite);
+    @Query("select u.fullName from User u where u.id = :id")
+    Optional<String> findFullNameById(@Param("id") Long id);
+    @Query("""
+           SELECT u FROM User u
+           WHERE u.role = 'STUDENT'
+             AND u.studentGroupe IS NULL
+             AND LOWER(TRIM(u.specialite)) = LOWER(TRIM(:specialite))
+           """)
+    List<User> findAvailableStudentsBySpecialite(@Param("specialite") String specialite);
 
-    // Trainers avec moins de 4 groupes
-    @Query("SELECT u FROM User u " +
-            "WHERE u.role = 'TRAINER' " +
-            "AND size(u.trainerGroupes) < 4 " +
-            "AND LOWER(TRIM(u.specialite)) = LOWER(TRIM(:specialite))")
+    @Query("""
+           SELECT u FROM User u
+           WHERE u.role = 'TRAINER'
+             AND size(u.trainerGroupes) < 4
+             AND LOWER(TRIM(u.specialite)) = LOWER(TRIM(:specialite))
+           """)
     List<User> findAvailableTrainersBySpecialite(@Param("specialite") String specialite);
 
-    // Charger tous les users avec leurs groupes
-    @Query("SELECT DISTINCT u FROM User u " +
-            "LEFT JOIN FETCH u.studentGroupe " +
-            "LEFT JOIN FETCH u.trainerGroupes")
+    @Query("""
+           SELECT DISTINCT u FROM User u
+           LEFT JOIN FETCH u.studentGroupe
+           LEFT JOIN FETCH u.trainerGroupes
+           """)
     List<User> findAllWithGroups();
 
     @Query("SELECT t FROM User t JOIN t.trainerGroupes g WHERE g.id = :groupeId")
     List<User> findTrainersByGroupeId(@Param("groupeId") Long groupeId);
+    // NEW: fetch the student's group id (assumes User has a ManyToOne<Group> groupe)
+    @Query("""
+        select g.id from User u
+        join u.studentGroupe g
+        where lower(u.email) = lower(:email)
+    """)
+    Optional<Long> findGroupIdByEmailIgnoreCase(@Param("email") String email);
 }

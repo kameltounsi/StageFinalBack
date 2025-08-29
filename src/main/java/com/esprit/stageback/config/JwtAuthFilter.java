@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User; // Spring Security UserDetails impl
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -25,12 +26,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final UserRepository userRepository;
 
     private static final String[] SWAGGER_WHITELIST = {
-            "/v3/api-docs",         // racine JSON
+            "/v3/api-docs",
             "/v3/api-docs/",
             "/swagger-ui",
             "/swagger-ui/",
             "/swagger-ui.html",
-            // facultatifs si présents
             "/swagger-resources",
             "/webjars",
             "/configuration"
@@ -41,7 +41,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        // 1) Laisser passer Swagger + OPTIONS sans toucher au contexte sécurité
+        // 1) Laisser passer Swagger + OPTIONS
         if (isPreflight(request) || isSwaggerPath(request)) {
             filterChain.doFilter(request, response);
             return;
@@ -57,23 +57,37 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String jwt = authHeader.substring(7);
 
         try {
-            String userEmail = jwtService.extractEmail(jwt); // peut lancer exceptions JWT
+            String userEmail = jwtService.extractEmail(jwt); // sub = email
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                var user = userRepository.findByEmail(userEmail).orElse(null);
-                if (user != null && jwtService.isTokenValid(jwt, user)) {
+                var userEntity = userRepository.findByEmail(userEmail).orElse(null);
+                if (userEntity != null && jwtService.isTokenValid(jwt, userEntity)) {
+
+                    // ✅ principal = UserDetails avec username = email
+                    var userDetails = User.withUsername(userEntity.getEmail())
+                            .password(userEntity.getPassword() != null ? userEntity.getPassword() : "")
+                            .authorities(userEntity.getAuthorities()) // ou List.of(new SimpleGrantedAuthority("ROLE_" + userEntity.getRole().name()))
+                            .accountExpired(false)
+                            .accountLocked(false)
+                            .credentialsExpired(false)
+                            .disabled(false)
+                            .build();
+
                     var authToken = new UsernamePasswordAuthenticationToken(
-                            user, null, user.getAuthorities()
+                            userDetails, null, userDetails.getAuthorities()
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
+
             filterChain.doFilter(request, response);
 
         } catch (ExpiredJwtException ex) {
             writeJsonError(response, 401, "Session expirée. Veuillez vous reconnecter.");
+            return; // ✅ stopper la chaîne après avoir écrit la réponse
         } catch (SignatureException | MalformedJwtException ex) {
             writeJsonError(response, 401, "Token invalide.");
+            return; // ✅ stopper la chaîne après avoir écrit la réponse
         }
     }
 

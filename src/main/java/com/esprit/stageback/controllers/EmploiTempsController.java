@@ -126,5 +126,16 @@ public class EmploiTempsController {
                 .replaceAll("\\s+", " ")
                 .trim();
     }
+    // 📅 Récupérer le planning d’un formateur entre 2 dates (pour l’écran du trainer)
+    @GetMapping("/trainer/{trainerId}")
+    public ResponseEntity<List<EmploiTemps>> getPlanningByTrainerAndWeek(
+            @PathVariable Long trainerId,
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam("endDate")   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
+        return ResponseEntity.ok(
+                emploiTempsService.getPlanningByTrainerAndWeek(trainerId, startDate, endDate)
+        );
+    }
 
 }

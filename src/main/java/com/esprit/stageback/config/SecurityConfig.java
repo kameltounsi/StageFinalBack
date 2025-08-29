@@ -30,7 +30,6 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            // facultatifs si encore présents
             "/swagger-resources/**", "/webjars/**", "/configuration/**"
     };
 
@@ -59,38 +58,42 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
+                        // CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // 🔓 Swagger & OpenAPI publics
+                        // Swagger public
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
 
-                        // 🔓 Tes endpoints publics
+                        // --- Public (tes endpoints ouverts) ---
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/api/groups/**",
                                 "/api/auth/students",
                                 "/api/auth/trainers",
-                                "/api/specialities/**",
-                                "/api/plannings/**",     // ✅ ton endpoint PDF + le reste du contrôleur
-
+                                "/api/specialities/**",   // garde l'orthographe que tu utilises vraiment
+                                "/api/plannings/**",
                                 "/api/requests/**",
                                 "/favicon.ico", "/", "/index.html",
                                 "/emploi-temps/planning-pdf/**"
-
                         ).permitAll()
 
-                        // 🔓 (tu as mis ces endpoints en public)
-                        .requestMatchers("/api/plannings/**").permitAll()
-                        .requestMatchers("/api/specialites/**").permitAll()
-                        .requestMatchers("/api/groups/available-students/**").permitAll()
-                        .requestMatchers("/api/groups/available-trainers/**").permitAll()
+                        // Endpoints PDF publics spécifiques (si voulu)
                         .requestMatchers(HttpMethod.GET, "/api/plannings/groupe/*/pdf").permitAll()
 
+                        // --- Zones protégées par rôle ---
+                        // Emploi du temps "me" (JSON)
+                        .requestMatchers("/api/trainers/me/**").hasAnyRole("TRAINER", "ADMIN")
+                        .requestMatchers("/api/students/me/**").hasAnyRole("STUDENT", "ADMIN")
+
+                        // Emploi du temps "me" (PDF) — aligne bien le chemin côté Front : /api/trainers/me/weekly-schedule.pdf
+                        .requestMatchers("/api/trainers/me/weekly-schedule.pdf").hasAnyRole("TRAINER", "ADMIN")
+                        .requestMatchers("/api/students/me/weekly-schedule.pdf").hasAnyRole("STUDENT", "ADMIN")
+
+                        // Toute autre requête nécessite une auth
                         .anyRequest().authenticated()
                 )
 
                 .authenticationProvider(authenticationProvider())
-                // 🔑 Le filtre reste, mais on va le faire IGNORER Swagger (cf. étape 2)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
@@ -102,19 +105,21 @@ public class SecurityConfig {
         provider.setPasswordEncoder(appConfig.passwordEncoder());
         return provider;
     }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // Front Angular en dev
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:4200"));
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:4200",
+                "http://127.0.0.1:4200"
+        ));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-
-        // Autoriser tous les en-têtes (incl. X-Skip-Auth-Redirect, etc.)
         configuration.setAllowedHeaders(List.of("*"));
 
-        // >>> EXPOSE "Content-Disposition" pour que Angular puisse lire le nom de fichier
+        // Expose pour récupération du nom de fichier, etc.
         configuration.setExposedHeaders(List.of(
                 "Content-Disposition",
                 "Authorization",
@@ -128,5 +133,4 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-
 }

@@ -115,5 +115,9 @@ public class EmploiTempsServiceImpl implements EmploiTempsService {
     public void supprimerEmploi(Long emploiId) {
         emploiTempsRepository.deleteById(emploiId);
     }
+    @Override
+    public List<EmploiTemps> getPlanningByTrainerAndWeek(Long trainerId, LocalDate start, LocalDate end) {
+        return emploiTempsRepository.findByFormateur_IdAndDateBetween(trainerId, start, end);
+    }
 
 }

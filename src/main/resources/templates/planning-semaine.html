@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8"/>
-    <title>Planning hebdomadaire</title>
+    <title>Weekly Schedule</title>
 
     <style>
         /* --- Page --- */
@@ -13,13 +13,13 @@
         * { box-sizing: border-box; }
         html, body {
             font-family: Arial, Helvetica, sans-serif;
-            color: #1f2937; /* gris-900 */
+            color: #1f2937; /* gray-900 */
             font-size: 12px;
             line-height: 1.35;
         }
         .wrap { width: 100%; }
 
-        /* --- Marque (logo + ligne) --- */
+        /* --- Brand (logo + line) --- */
         .brand {
             display: flex;
             align-items: center;
@@ -29,7 +29,7 @@
             border-bottom: 2px solid #e5e7eb;
         }
         .brand .logo {
-            height: 42px;           /* ajuste si besoin */
+            height: 42px;
             width: auto;
         }
         .brand .brand-text {
@@ -38,7 +38,7 @@
             font-size: 16px;
         }
 
-        /* --- En-tête --- */
+        /* --- Header --- */
         .header {
             margin-bottom: 10px;
         }
@@ -46,26 +46,26 @@
             font-size: 20px;
             font-weight: 700;
             margin: 0 0 2px 0;
-            color: #111827; /* gris-900 foncé */
+            color: #111827; /* dark gray-900 */
         }
         .subtitle {
             font-size: 12px;
-            color: #6b7280; /* gris-500 */
+            color: #6b7280; /* gray-500 */
             margin: 0;
         }
 
-        /* --- Tableau planning --- */
+        /* --- Schedule table --- */
         table.planning {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed;        /* colonnes jours de largeur égale */
+            table-layout: fixed;
         }
         thead th {
-            background: #0ea5e9;        /* bleu */
+            background: #0ea5e9; /* blue */
             color: white;
             padding: 8px 6px;
             text-align: center;
-            border: 1px solid #0891b2;  /* bleu foncé */
+            border: 1px solid #0891b2; /* dark blue */
             font-weight: 700;
             white-space: nowrap;
         }
@@ -73,9 +73,9 @@
             font-size: 12px;
         }
         tbody th.slot {
-            width: 110px;               /* colonne créneaux */
-            background: #f3f4f6;        /* gris-100 */
-            border: 1px solid #e5e7eb;  /* gris-200 */
+            width: 110px;
+            background: #f3f4f6; /* gray-100 */
+            border: 1px solid #e5e7eb; /* gray-200 */
             text-align: center;
             padding: 10px 6px;
             font-weight: 700;
@@ -85,24 +85,24 @@
             vertical-align: top;
             border: 1px solid #e5e7eb;
             padding: 6px;
-            height: 120px;              /* hauteur suffisante pour le PDF */
+            height: 120px;
             page-break-inside: avoid;
         }
 
-        /* --- Pause --- */
+        /* --- Break --- */
         tr.pause-row td, tr.pause-row th {
-            background: #fef3c7;        /* amber-100 */
-            color: #92400e;             /* amber-800 */
+            background: #fef3c7; /* amber-100 */
+            color: #92400e; /* amber-800 */
             text-align: center;
             font-weight: 600;
             border-color: #f59e0b;
             height: 36px;
         }
 
-        /* --- Carte séance --- */
+        /* --- Session card --- */
         .session {
-            background: #ecfeff;        /* cyan-50 */
-            border: 1px solid #a5f3fc;  /* cyan-300 */
+            background: #ecfeff; /* cyan-50 */
+            border: 1px solid #a5f3fc; /* cyan-300 */
             border-radius: 8px;
             padding: 8px;
             margin-bottom: 6px;
@@ -111,28 +111,28 @@
             font-weight: 700;
             margin-bottom: 4px;
             font-size: 12px;
-            color: #0c4a6e;             /* cyan-900/bleu pétrole */
+            color: #0c4a6e; /* cyan-900 */
         }
         .meta {
             font-size: 11px;
         }
         .badge {
             display: inline-block;
-            border: 1px solid #c7d2fe;  /* indigo-200 */
-            background: #eef2ff;        /* indigo-50 */
+            border: 1px solid #c7d2fe; /* indigo-200 */
+            background: #eef2ff; /* indigo-50 */
             border-radius: 999px;
             padding: 2px 8px;
             margin-right: 6px;
             margin-bottom: 3px;
         }
         .cell-empty {
-            color: #9ca3af;             /* gris-400 */
+            color: #9ca3af; /* gray-400 */
             font-style: italic;
             text-align: center;
             margin-top: 10px;
         }
 
-        /* --- Pied de page --- */
+        /* --- Footer --- */
         .footer {
             margin-top: 8px;
             font-size: 10px;
@@ -146,39 +146,38 @@
      th:with="
        slot0=${(slots != null and #lists.size(slots) >= 1) ? slots[0] : '08:00 – 10:00'},
        slot1=${(slots != null and #lists.size(slots) >= 2) ? slots[1] : '10:00 – 12:00'},
-       slot2=${(slots != null and #lists.size(slots) >= 3) ? slots[2] : '13:00 – 15:00'},
-       slot3=${(slots != null and #lists.size(slots) >= 4) ? slots[3] : '15:00 – 17:00'}
+       slot2=${(slots != null and #lists.size(slots) >= 3) ? slots[2] : '01:00 PM – 03:00 PM'},
+       slot3=${(slots != null and #lists.size(slots) >= 4) ? slots[3] : '03:00 PM – 05:00 PM'}
      ">
 
-    <!-- Bandeau marque -->
+    <!-- Brand bar -->
     <div class="brand">
-        <!-- IMPORTANT : chemin relatif à baseUri = classpath:/static/ -->
         <img class="logo" src="images/logo.png" alt="Fuse logo"/>
         <div class="brand-text">Fuse Learning</div>
     </div>
 
-    <!-- En-tête -->
+    <!-- Header -->
     <div class="header">
         <h1 class="title">
-            Planning de la semaine
-            <span th:text="'(du ' + ${#temporals.format(start,'dd/MM/yyyy')} + ' au ' + ${#temporals.format(end,'dd/MM/yyyy')} + ')'">
-                (du 01/01/2025 au 07/01/2025)
+            Weekly Schedule
+            <span th:text="'(from ' + ${#temporals.format(start,'MM/dd/yyyy')} + ' to ' + ${#temporals.format(end,'MM/dd/yyyy')} + ')'">
+                (from 01/01/2025 to 01/07/2025)
             </span>
         </h1>
         <p class="subtitle">
-            Groupe :
-            <strong th:text="${groupe != null ? groupe.nom : '—'}">NOM GROUPE</strong>
+            Group:
+            <strong th:text="${groupe != null ? groupe.nom : '—'}">GROUP NAME</strong>
         </p>
     </div>
 
-    <!-- Tableau principal -->
+    <!-- Main table -->
     <table class="planning">
         <thead>
         <tr>
-            <th>Créneaux</th>
+            <th>Time Slots</th>
             <th class="day" th:each="d : ${days}"
-                th:text="${#temporals.format(d, 'EEEE dd/MM')}">
-                Lundi 01/01
+                th:text="${#temporals.format(d, 'EEEE MM/dd')}">
+                Monday 01/01
             </th>
         </tr>
         </thead>
@@ -190,12 +189,12 @@
             <td th:each="d, st : ${days}">
                 <div th:with="list=${cellsPerDay[st.index][0]}">
                     <div class="session" th:each="e : ${list}">
-                        <div class="matiere" th:text="${e.matiere}">Matière</div>
+                        <div class="matiere" th:text="${e.matiere}">Subject</div>
                         <div class="meta">
                             <span class="badge"
-                                  th:text="${e.formateur != null ? e.formateur.fullName : '—'}">Formateur</span>
+                                  th:text="${e.formateur != null ? e.formateur.fullName : '—'}">Instructor</span>
                             <span class="badge"
-                                  th:text="'Salle ' + ${#strings.defaultString(e.salle,'—')}">Salle</span>
+                                  th:text="'Room ' + ${#strings.defaultString(e.salle,'—')}">Room</span>
                         </div>
                     </div>
                     <div class="cell-empty" th:if="${#lists.isEmpty(list)}">—</div>
@@ -209,12 +208,12 @@
             <td th:each="d, st : ${days}">
                 <div th:with="list=${cellsPerDay[st.index][1]}">
                     <div class="session" th:each="e : ${list}">
-                        <div class="matiere" th:text="${e.matiere}">Matière</div>
+                        <div class="matiere" th:text="${e.matiere}">Subject</div>
                         <div class="meta">
                             <span class="badge"
-                                  th:text="${e.formateur != null ? e.formateur.fullName : '—'}">Formateur</span>
+                                  th:text="${e.formateur != null ? e.formateur.fullName : '—'}">Instructor</span>
                             <span class="badge"
-                                  th:text="'Salle ' + ${#strings.defaultString(e.salle,'—')}">Salle</span>
+                                  th:text="'Room ' + ${#strings.defaultString(e.salle,'—')}">Room</span>
                         </div>
                     </div>
                     <div class="cell-empty" th:if="${#lists.isEmpty(list)}">—</div>
@@ -222,24 +221,24 @@
             </td>
         </tr>
 
-        <!-- Pause 12:00 – 13:00 -->
+        <!-- Break 12:00 – 13:00 -->
         <tr class="pause-row">
-            <th class="slot">12:00 – 13:00</th>
-            <td th:each="d : ${days}">Pause</td>
+            <th class="slot">12:00 – 01:00 PM</th>
+            <td th:each="d : ${days}">Break</td>
         </tr>
 
         <!-- 13:00 – 15:00 -->
         <tr>
-            <th class="slot" th:text="${slot2}">13:00 – 15:00</th>
+            <th class="slot" th:text="${slot2}">01:00 PM – 03:00 PM</th>
             <td th:each="d, st : ${days}">
                 <div th:with="list=${cellsPerDay[st.index][2]}">
                     <div class="session" th:each="e : ${list}">
-                        <div class="matiere" th:text="${e.matiere}">Matière</div>
+                        <div class="matiere" th:text="${e.matiere}">Subject</div>
                         <div class="meta">
                             <span class="badge"
-                                  th:text="${e.formateur != null ? e.formateur.fullName : '—'}">Formateur</span>
+                                  th:text="${e.formateur != null ? e.formateur.fullName : '—'}">Instructor</span>
                             <span class="badge"
-                                  th:text="'Salle ' + ${#strings.defaultString(e.salle,'—')}">Salle</span>
+                                  th:text="'Room ' + ${#strings.defaultString(e.salle,'—')}">Room</span>
                         </div>
                     </div>
                     <div class="cell-empty" th:if="${#lists.isEmpty(list)}">—</div>
@@ -249,16 +248,16 @@
 
         <!-- 15:00 – 17:00 -->
         <tr>
-            <th class="slot" th:text="${slot3}">15:00 – 17:00</th>
+            <th class="slot" th:text="${slot3}">03:00 PM – 05:00 PM</th>
             <td th:each="d, st : ${days}">
                 <div th:with="list=${cellsPerDay[st.index][3]}">
                     <div class="session" th:each="e : ${list}">
-                        <div class="matiere" th:text="${e.matiere}">Matière</div>
+                        <div class="matiere" th:text="${e.matiere}">Subject</div>
                         <div class="meta">
                             <span class="badge"
-                                  th:text="${e.formateur != null ? e.formateur.fullName : '—'}">Formateur</span>
+                                  th:text="${e.formateur != null ? e.formateur.fullName : '—'}">Instructor</span>
                             <span class="badge"
-                                  th:text="'Salle ' + ${#strings.defaultString(e.salle,'—')}">Salle</span>
+                                  th:text="'Room ' + ${#strings.defaultString(e.salle,'—')}">Room</span>
                         </div>
                     </div>
                     <div class="cell-empty" th:if="${#lists.isEmpty(list)}">—</div>
@@ -269,7 +268,7 @@
     </table>
 
     <div class="footer">
-        Généré le <span th:text="${now}">01/01/2025 12:00</span>
+        Generated on <span th:text="${now}">01/01/2025 12:00</span>
     </div>
 </div>
 </body>

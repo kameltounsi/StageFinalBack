@@ -1,5 +1,6 @@
 package com.esprit.stageback.repositories;
 
+import com.esprit.stageback.dto.WeeklyItemDto;
 import com.esprit.stageback.entities.EmploiTemps;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -49,4 +50,42 @@ public interface EmploiTempsRepository extends JpaRepository<EmploiTemps, Long> 
     List<EmploiTemps> findPlanning(@Param("groupeId") Long groupeId,
                                    @Param("start") LocalDate start,
                                    @Param("end") LocalDate end);
+    // ✅ NOUVEAU : emploi du temps d’un formateur
+    @Query("""
+           select e
+           from EmploiTemps e
+           where e.formateur.id = :trainerId and e.date between :start and :end
+           order by e.date, e.heureDebut
+           """)
+    List<EmploiTemps> findTrainerPlanning(@Param("trainerId") Long trainerId,
+                                          @Param("start") LocalDate start,
+                                          @Param("end") LocalDate end);
+
+    List<EmploiTemps> findByFormateurIdAndDateBetweenOrderByDateAscHeureDebutAsc(
+            Long formateurId, LocalDate start, LocalDate end
+    );
+    @Query("""
+        select e
+        from EmploiTemps e
+        where e.formateur.id = :trainerId
+          and e.date between :start and :end
+        order by e.date asc, e.heureDebut asc
+    """)
+    List<EmploiTemps> findWeeklyForTrainer(
+            @Param("trainerId") Long trainerId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end
+    );
+
+    @Query("""
+        select e from EmploiTemps e
+        where e.groupe.id = :groupId
+          and e.date between :start and :end
+        order by e.date asc, e.heureDebut asc
+    """)
+    List<EmploiTemps> findWeeklyForGroup(@Param("groupId") Long groupId,
+                                         @Param("start") LocalDate start,
+                                         @Param("end") LocalDate end);
+
+    List<EmploiTemps> findByFormateur_IdAndDateBetween(Long trainerId, LocalDate start, LocalDate end);
 }

@@ -44,7 +44,7 @@ public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest reque
     String email = request.getEmail();
     System.out.println("📩 Email reçu : '" + email + "'");
 
-    User user = userRepository.findByEmailIgnoreCase(email)
+    User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("User not found"));
 
     String code = String.format("%04d", new Random().nextInt(10000));
@@ -59,7 +59,7 @@ public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest reque
 
     @PostMapping("/verify-code")
     public ResponseEntity<?> verifyCode(@RequestParam String email, @RequestParam String code) {
-        User user = userRepository.findByEmailIgnoreCase(email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         if (user.getResetCode().equals(code)) {
@@ -73,7 +73,7 @@ public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest reque
 
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestParam String email, @RequestParam String newPassword) {
-        User user = userRepository.findByEmailIgnoreCase(email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (user.getVerificationStatus() != VerificationStatus.VERIFIED) {

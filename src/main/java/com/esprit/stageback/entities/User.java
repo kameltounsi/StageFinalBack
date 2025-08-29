@@ -8,16 +8,13 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.Collection;
 import java.util.List;
-
 @Entity
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class User {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     private String fullName;
@@ -26,41 +23,45 @@ public class User {
     private String email;
 
     private String password;
-
     private String profilePicture;
-
     private String specialite;
 
-    // Relations avec emploi du temps, cours, notes et présences
-    @OneToMany(mappedBy = "formateur")
+    // OneToMany est LAZY par défaut (on rend explicite et on exclut toString/equals)
+    @OneToMany(mappedBy = "formateur", fetch = FetchType.LAZY)
+    @ToString.Exclude @EqualsAndHashCode.Exclude
     @JsonIgnoreProperties({"formateur"})
     private List<EmploiTemps> emploisDuTemps;
 
-    @OneToMany(mappedBy = "formateur")
+    @OneToMany(mappedBy = "formateur", fetch = FetchType.LAZY)
+    @ToString.Exclude @EqualsAndHashCode.Exclude
     @JsonIgnoreProperties({"formateur"})
     private List<Cours> coursDonnes;
 
-    @OneToMany(mappedBy = "etudiant")
+    @OneToMany(mappedBy = "etudiant", fetch = FetchType.LAZY)
+    @ToString.Exclude @EqualsAndHashCode.Exclude
     @JsonIgnoreProperties({"etudiant"})
     private List<Note> notes;
 
-    @OneToMany(mappedBy = "etudiant")
+    @OneToMany(mappedBy = "etudiant", fetch = FetchType.LAZY)
+    @ToString.Exclude @EqualsAndHashCode.Exclude
     @JsonIgnoreProperties({"etudiant"})
     private List<Presence> presences;
 
-    // ✅ Student -> Groupe (ManyToOne)
-    @ManyToOne(fetch = FetchType.EAGER)
+    // Était EAGER → mettre LAZY
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "groupe_id")
+    @ToString.Exclude @EqualsAndHashCode.Exclude
     @JsonIgnoreProperties({"students", "trainers"})
     private Groupe studentGroupe;
 
-    // ✅ Trainer -> Groupes (ManyToMany)
-    @ManyToMany(fetch = FetchType.EAGER)
+    // Était EAGER → mettre LAZY (ManyToMany est LAZY par défaut, on force explicitement)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "trainer_groupes",
             joinColumns = @JoinColumn(name = "trainer_id"),
             inverseJoinColumns = @JoinColumn(name = "groupe_id")
     )
+    @ToString.Exclude @EqualsAndHashCode.Exclude
     @JsonIgnoreProperties({"students", "trainers"})
     private List<Groupe> trainerGroupes;
 
@@ -81,10 +82,6 @@ public class User {
 
     @Override
     public String toString() {
-        return "User{id=" + id +
-                ", fullName='" + fullName + '\'' +
-                ", email='" + email + '\'' +
-                ", role=" + role +
-                '}';
+        return "User{id=" + id + ", fullName='" + fullName + '\'' + ", email='" + email + '\'' + ", role=" + role + '}';
     }
 }

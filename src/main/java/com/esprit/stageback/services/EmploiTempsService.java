@@ -9,4 +9,6 @@ public interface EmploiTempsService {
     List<EmploiTemps> getPlanningByGroupe(Long groupeId);
     List<EmploiTemps> getPlanningBetweenDates(LocalDate start, LocalDate end);
     void supprimerEmploi(Long emploiId);
+    List<EmploiTemps> getPlanningByTrainerAndWeek(Long trainerId, LocalDate start, LocalDate end);
+
 }

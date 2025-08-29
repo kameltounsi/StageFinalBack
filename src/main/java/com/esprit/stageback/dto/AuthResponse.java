@@ -1,3 +1,4 @@
+// src/main/java/com/esprit/stageback/dto/AuthResponse.java
 package com.esprit.stageback.dto;
 
 import com.esprit.stageback.entities.User;

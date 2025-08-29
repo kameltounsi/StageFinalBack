@@ -84,11 +84,11 @@ public class SecurityConfig {
                         // Emploi du temps "me" (JSON)
                         .requestMatchers("/api/trainers/me/**").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers("/api/students/me/**").hasAnyRole("STUDENT", "ADMIN")
+                        .requestMatchers("/api/trainers/me/attendance/**").hasAnyRole("TRAINER", "ADMIN")
 
                         // Emploi du temps "me" (PDF) — aligne bien le chemin côté Front : /api/trainers/me/weekly-schedule.pdf
                         .requestMatchers("/api/trainers/me/weekly-schedule.pdf").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers("/api/students/me/weekly-schedule.pdf").hasAnyRole("STUDENT", "ADMIN")
-
                         // Toute autre requête nécessite une auth
                         .anyRequest().authenticated()
                 )

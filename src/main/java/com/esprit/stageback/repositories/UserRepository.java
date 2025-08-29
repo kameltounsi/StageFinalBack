@@ -55,4 +55,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
         where lower(u.email) = lower(:email)
     """)
     Optional<Long> findGroupIdByEmailIgnoreCase(@Param("email") String email);
+    // src/main/java/com/esprit/stageback/repositories/UserRepository.java
+    @Query("""
+    select g.id from User u
+    join u.trainerGroupes g
+    where lower(u.email) = lower(:email)
+""")
+    List<Long> findTrainerGroupIdsByEmailIgnoreCase(@Param("email") String email);
+
 }

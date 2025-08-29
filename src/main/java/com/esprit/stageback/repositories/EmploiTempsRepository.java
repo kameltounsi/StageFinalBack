@@ -88,4 +88,13 @@ public interface EmploiTempsRepository extends JpaRepository<EmploiTemps, Long> 
                                          @Param("end") LocalDate end);
 
     List<EmploiTemps> findByFormateur_IdAndDateBetween(Long trainerId, LocalDate start, LocalDate end);
+
+    @Query("""
+        select e from EmploiTemps e
+        where e.formateur.id = :trainerId
+          and e.date = :today
+          and ( e.heureDebut >= :now or (:now between e.heureDebut and e.heureFin) )
+        order by e.heureDebut asc
+    """)
+    List<EmploiTemps> findTodayUpcomingOrOngoingForTrainer(Long trainerId, LocalDate today, LocalTime now);
 }

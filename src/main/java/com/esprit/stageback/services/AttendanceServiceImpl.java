@@ -77,14 +77,18 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .collect(Collectors.toMap(p -> p.getEtudiant().getId(), p -> p));
 
         List<RosterRowDTO> rows = students.stream()
-                .map(s -> RosterRowDTO.builder()
-                        .studentId(s.getId())
-                        .fullName(s.getFullName())
-                        .email(s.getEmail()) // 👈 email renvoyé au front
-                        .current(Optional.ofNullable(presenceByStudent.get(s.getId()))
-                                .map(Presence::getStatut)
-                                .orElse(null))
-                        .build())
+                .map(s -> {
+                    var p = presenceByStudent.get(s.getId());
+                    return RosterRowDTO.builder()
+                            .studentId(s.getId())
+                            .fullName(s.getFullName())
+                            .email(s.getEmail())
+                            .current(p != null ? p.getStatut() : null)
+                            .justified(p != null ? p.getJustified() : null)           // ✅ OK
+                            .justificationNote(p != null ? p.getJustificationNote() : null) // ✅ OK
+                            .build();
+
+                })
                 .sorted(Comparator.comparing(RosterRowDTO::getFullName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
 
@@ -101,6 +105,8 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     // -------- Mark (écriture) --------
+    // src/main/java/com/esprit/stageback/services/AttendanceServiceImpl.java
+// (ton fichier existant : ne change que la méthode mark)
     @Override
     public RosterViewDTO mark(Long emploiId, Long trainerId, List<PresenceMarkInput> entries) {
         EmploiTemps e = emploiRepo.findById(emploiId)
@@ -108,28 +114,50 @@ public class AttendanceServiceImpl implements AttendanceService {
         User trainer = userRepo.findById(trainerId).orElseThrow();
         assertTrainerOwnsEmploi(trainer, e);
 
+        // Vérifier appartenance des étudiants au groupe
         Set<Long> groupStudentIds = groupStudents(e).stream()
                 .map(User::getId)
                 .collect(Collectors.toSet());
 
         for (PresenceMarkInput in : entries) {
-            if (in.getStudentId() == null) throw new IllegalArgumentException("studentId manquant.");
-            if (in.getStatut() == null)     throw new IllegalArgumentException("Statut requis.");
+            if (in.getStudentId() == null) {
+                throw new IllegalArgumentException("studentId manquant.");
+            }
+            if (in.getStatut() == null) {
+                throw new IllegalArgumentException("Statut requis (PRESENT ou ABSENT).");
+            }
             if (!groupStudentIds.contains(in.getStudentId())) {
                 throw new IllegalArgumentException("L'étudiant " + in.getStudentId() + " n'appartient pas au groupe.");
             }
         }
 
+        // Upsert
         for (PresenceMarkInput in : entries) {
             Presence p = presenceRepo.findByEtudiant_IdAndEmploiTemps_Id(in.getStudentId(), e.getId())
                     .orElse(Presence.builder()
                             .etudiant(User.builder().id(in.getStudentId()).build())
                             .emploiTemps(e)
                             .build());
+
             p.setStatut(in.getStatut());
+
+            // ✅ Persiste la justification & note selon le statut
+            if (in.getStatut() == StatutPresence.PRESENT) {
+                p.setJustified(Boolean.FALSE);
+                p.setJustificationNote(null);
+            } else {
+                // ABSENT (ou RETARD si tu veux aussi justifier un retard)
+                p.setJustified(Boolean.TRUE.equals(in.getJustified()));
+                String note = (in.getJustificationNote() != null && !in.getJustificationNote().trim().isEmpty())
+                        ? in.getJustificationNote().trim()
+                        : null;
+                p.setJustificationNote(note);
+            }
+
             presenceRepo.save(p);
         }
 
+        // Retourner la vue mise à jour
         return getRoster(emploiId, trainerId);
     }
 

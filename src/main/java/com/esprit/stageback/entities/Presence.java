@@ -26,5 +26,12 @@ public class Presence {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StatutPresence statut; // PRESENT, ABSENT, RETARD (UI: on n’utilise que PRESENT/ABSENT)
+    private StatutPresence statut; // PRESENT, ABSENT, RETARD
+
+    // ✅ Ajoute/garantis ces colonnes
+    @Column(name = "justified")
+    private Boolean justified;              // null/false/true
+
+    @Column(name = "justification_note", length = 1000)
+    private String justificationNote;       // texte libre quand absent
 }

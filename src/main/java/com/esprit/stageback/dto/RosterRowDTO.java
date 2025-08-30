@@ -2,13 +2,15 @@
 package com.esprit.stageback.dto;
 
 import com.esprit.stageback.entities.StatutPresence;
-import lombok.*;
+import lombok.Builder;
+import lombok.Data;
 
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Data @Builder
 public class RosterRowDTO {
     private Long studentId;
     private String fullName;
-    private String email;              // 👈 NEW
-
-    private StatutPresence current; // null si non saisi
+    private String email;                  // ⬅️ (optionnel si tu l’as)
+    private StatutPresence current;        // PRESENT/ABSENT/RETARD (retard non utilisé ici)
+    private Boolean justified;             // ⬅️ NEW
+    private String justificationNote;      // ⬅️ NEW
 }

@@ -2,10 +2,12 @@
 package com.esprit.stageback.dto;
 
 import com.esprit.stageback.entities.StatutPresence;
-import lombok.*;
+import lombok.Data;
 
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
 public class PresenceMarkInput {
     private Long studentId;
-    private StatutPresence statut; // PRESENT ou ABSENT
+    private StatutPresence statut;      // PRESENT ou ABSENT
+    private Boolean justified;          // ⬅️ NEW (optionnel – pertinent si ABSENT)
+    private String justificationNote;   // ⬅️ NEW (optionnel)
 }

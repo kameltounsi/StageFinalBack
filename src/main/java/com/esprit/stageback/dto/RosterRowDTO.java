@@ -8,5 +8,7 @@ import lombok.*;
 public class RosterRowDTO {
     private Long studentId;
     private String fullName;
+    private String email;              // 👈 NEW
+
     private StatutPresence current; // null si non saisi
 }

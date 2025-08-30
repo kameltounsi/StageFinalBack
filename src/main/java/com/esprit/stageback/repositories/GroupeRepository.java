@@ -5,9 +5,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface GroupeRepository extends JpaRepository<Groupe, Long> {
     @Query("select g from Groupe g left join fetch g.students where g.id = :id")
     Optional<Groupe> findByIdWithStudents(@Param("id") Long id);
+
+    /** Groupes où l’utilisateur est formateur */
+    @Query("select distinct g from Groupe g join g.trainers t where t.id = :trainerId")
+    List<Groupe> findByTrainers_Id(Long trainerId);
 }

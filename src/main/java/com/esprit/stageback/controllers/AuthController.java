@@ -19,10 +19,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal;
 import java.util.*;
 
 @RestController
@@ -68,7 +70,7 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
-    @GetMapping("/me")
+    /*@GetMapping("/me")
     public ResponseEntity<UserDTO> me(@RequestHeader("Authorization") String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -83,6 +85,25 @@ public class AuthController {
         UserDTO dto = ((com.esprit.stageback.services.AuthServiceImpl)authService)
                 .publicToDTOWithGroupIds(user);   // cf. méthode ci-dessous
 
+        return ResponseEntity.ok(dto);
+    }
+*/
+    @GetMapping("/me")
+    public ResponseEntity<UserDTO> me(Principal principal) {
+        var user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        // If you want group IDs too, reuse your toDTOWithGroupIds logic
+        var dto = new UserDTO(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole() != null ? user.getRole().name() : null,
+                user.getProfilePicture(),
+                (user.getStudentGroupe()!=null ? user.getStudentGroupe().getNom() : "No class assigned"),
+                (user.getStudentGroupe()!=null ? user.getStudentGroupe().getId() : null),
+                (user.getTrainerGroupes()!=null ? user.getTrainerGroupes().stream().map(Groupe::getNom).toList() : List.of()),
+                (user.getTrainerGroupes()!=null ? user.getTrainerGroupes().stream().map(Groupe::getId).toList() : List.of())
+        );
         return ResponseEntity.ok(dto);
     }
 

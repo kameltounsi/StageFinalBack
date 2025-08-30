@@ -1,19 +1,11 @@
-// src/main/java/com/esprit/stageback/services/impl/AttendanceServiceImpl.java
 package com.esprit.stageback.services;
 
-import com.esprit.stageback.dto.EmploiOptionDTO;
-import com.esprit.stageback.dto.PresenceMarkInput;
-import com.esprit.stageback.dto.RosterRowDTO;
-import com.esprit.stageback.dto.RosterViewDTO;
-import com.esprit.stageback.entities.EmploiTemps;
-import com.esprit.stageback.entities.Groupe;
-import com.esprit.stageback.entities.Presence;
-import com.esprit.stageback.entities.Roles;
-import com.esprit.stageback.entities.User;
+import com.esprit.stageback.dto.*;
+import com.esprit.stageback.entities.*;
 import com.esprit.stageback.repositories.EmploiTempsRepository;
+import com.esprit.stageback.repositories.GroupeRepository;
 import com.esprit.stageback.repositories.PresenceRepository;
 import com.esprit.stageback.repositories.UserRepository;
-import com.esprit.stageback.services.AttendanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -33,8 +25,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     private final EmploiTempsRepository emploiRepo;
     private final PresenceRepository presenceRepo;
     private final UserRepository userRepo;
-
-    // --------- helpers
+    private final GroupeRepository groupeRepo;
 
     private void assertTrainerOwnsEmploi(User trainer, EmploiTemps e) {
         boolean isAdmin = trainer.getRole() == Roles.ADMIN;
@@ -49,8 +40,7 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .orElseGet(List::of);
     }
 
-    // --------- interface impl
-
+    // -------- Today (raccourci du jour) --------
     @Override
     public List<EmploiOptionDTO> todaySeancesForTrainer(Long trainerId, ZoneId zone) {
         LocalDate today = LocalDate.now(zone);
@@ -71,6 +61,7 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .toList();
     }
 
+    // -------- Roster (lecture) --------
     @Override
     @Transactional(readOnly = true)
     public RosterViewDTO getRoster(Long emploiId, Long trainerId) {
@@ -89,6 +80,7 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .map(s -> RosterRowDTO.builder()
                         .studentId(s.getId())
                         .fullName(s.getFullName())
+                        .email(s.getEmail()) // 👈 email renvoyé au front
                         .current(Optional.ofNullable(presenceByStudent.get(s.getId()))
                                 .map(Presence::getStatut)
                                 .orElse(null))
@@ -108,6 +100,7 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .build();
     }
 
+    // -------- Mark (écriture) --------
     @Override
     public RosterViewDTO mark(Long emploiId, Long trainerId, List<PresenceMarkInput> entries) {
         EmploiTemps e = emploiRepo.findById(emploiId)
@@ -115,36 +108,88 @@ public class AttendanceServiceImpl implements AttendanceService {
         User trainer = userRepo.findById(trainerId).orElseThrow();
         assertTrainerOwnsEmploi(trainer, e);
 
-        // Vérifier appartenance des étudiants au groupe
         Set<Long> groupStudentIds = groupStudents(e).stream()
                 .map(User::getId)
                 .collect(Collectors.toSet());
 
         for (PresenceMarkInput in : entries) {
-            if (in.getStudentId() == null) {
-                throw new IllegalArgumentException("studentId manquant.");
-            }
-            if (in.getStatut() == null) {
-                throw new IllegalArgumentException("Statut requis (PRESENT ou ABSENT).");
-            }
+            if (in.getStudentId() == null) throw new IllegalArgumentException("studentId manquant.");
+            if (in.getStatut() == null)     throw new IllegalArgumentException("Statut requis.");
             if (!groupStudentIds.contains(in.getStudentId())) {
                 throw new IllegalArgumentException("L'étudiant " + in.getStudentId() + " n'appartient pas au groupe.");
             }
         }
 
-        // Upsert: un seul enregistrement par (étudiant, emploi)
         for (PresenceMarkInput in : entries) {
             Presence p = presenceRepo.findByEtudiant_IdAndEmploiTemps_Id(in.getStudentId(), e.getId())
                     .orElse(Presence.builder()
                             .etudiant(User.builder().id(in.getStudentId()).build())
                             .emploiTemps(e)
                             .build());
-
-            p.setStatut(in.getStatut()); // exclusivité: on stocke 1 statut
+            p.setStatut(in.getStatut());
             presenceRepo.save(p);
         }
 
-        // Retourner la vue mise à jour
         return getRoster(emploiId, trainerId);
+    }
+
+    // -------- History (intervalle) --------
+    @Override
+    @Transactional(readOnly = true)
+    public List<EmploiOptionDTO> sessionsBetweenForTrainer(Long trainerId, LocalDate start, LocalDate end) {
+        return emploiRepo.findByFormateurIdAndDateBetweenOrderByDateAscHeureDebutAsc(trainerId, start, end)
+                .stream()
+                .map(e -> EmploiOptionDTO.builder()
+                        .id(e.getId())
+                        .date(e.getDate())
+                        .start(e.getHeureDebut())
+                        .end(e.getHeureFin())
+                        .groupeId(e.getGroupe() != null ? e.getGroupe().getId() : null)
+                        .groupeNom(e.getGroupe() != null ? e.getGroupe().getNom() : null)
+                        .matiere(e.getMatiere())
+                        .salle(e.getSalle())
+                        .build())
+                .toList();
+    }
+
+    // -------- Classe → séance --------
+    @Override
+    @Transactional(readOnly = true)
+    public List<GroupOptionDTO> groupsForTrainer(Long trainerId) {
+        return groupeRepo.findByTrainers_Id(trainerId)
+                .stream()
+                .map(g -> GroupOptionDTO.builder()
+                        .id(g.getId())
+                        .nom(g.getNom())
+                        .specialite(g.getSpecialite())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EmploiOptionDTO> sessionsByGroup(Long trainerId, Long groupId, LocalDate start, LocalDate end) {
+        // sécurise : ne lister que si le prof appartient au groupe (ou ADMIN)
+        User trainer = userRepo.findById(trainerId).orElseThrow();
+        boolean owns = groupeRepo.findByTrainers_Id(trainerId).stream().anyMatch(g -> Objects.equals(g.getId(), groupId));
+        if (!owns && trainer.getRole() != Roles.ADMIN) {
+            throw new AccessDeniedException("Non autorisé pour ce groupe.");
+        }
+        LocalDate s = Optional.ofNullable(start).orElse(LocalDate.now().minusMonths(1));
+        LocalDate e = Optional.ofNullable(end).orElse(LocalDate.now().plusMonths(1));
+
+        return emploiRepo.findWeeklyForGroup(groupId, s, e)  // trié par date + heure
+                .stream()
+                .map(et -> EmploiOptionDTO.builder()
+                        .id(et.getId())
+                        .date(et.getDate())
+                        .start(et.getHeureDebut())
+                        .end(et.getHeureFin())
+                        .groupeId(groupId)
+                        .groupeNom(et.getGroupe() != null ? et.getGroupe().getNom() : null)
+                        .matiere(et.getMatiere())
+                        .salle(et.getSalle())
+                        .build())
+                .toList();
     }
 }

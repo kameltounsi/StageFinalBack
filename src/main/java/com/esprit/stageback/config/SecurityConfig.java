@@ -1,3 +1,4 @@
+// src/main/java/com/esprit/stageback/config/SecurityConfig.java
 package com.esprit.stageback.config;
 
 import lombok.RequiredArgsConstructor;
@@ -22,15 +23,17 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private static final String[] SWAGGER_WHITELIST = {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/swagger-resources/**", "/webjars/**", "/configuration/**"
+            "/swagger-resources/**",
+            "/webjars/**",
+            "/configuration/**"
     };
 
     private final JwtAuthFilter jwtAuthFilter;
@@ -58,38 +61,39 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
-                        // CORS preflight
+                        // --- CORS preflight ---
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Swagger public
+                        // --- Swagger public ---
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
 
-                        // --- Public (tes endpoints ouverts) ---
+                        // --- Public endpoints (à adapter si besoin) ---
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/api/groups/**",
                                 "/api/auth/students",
                                 "/api/auth/trainers",
-                                "/api/specialities/**",   // garde l'orthographe que tu utilises vraiment
+                                "/api/specialities/**",
                                 "/api/plannings/**",
                                 "/api/requests/**",
                                 "/favicon.ico", "/", "/index.html",
                                 "/emploi-temps/planning-pdf/**"
                         ).permitAll()
-
-                        // Endpoints PDF publics spécifiques (si voulu)
                         .requestMatchers(HttpMethod.GET, "/api/plannings/groupe/*/pdf").permitAll()
 
-                        // --- Zones protégées par rôle ---
-                        // Emploi du temps "me" (JSON)
+                        // --- Admin zone (NOUVEAU : protège toute l’API admin) ---
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Optionnel : règles plus fines
+                        .requestMatchers(HttpMethod.POST, "/api/admin/absences/alerts/**").hasRole("ADMIN")
+
+                        // --- Zones protégées existantes ---
                         .requestMatchers("/api/trainers/me/**").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers("/api/students/me/**").hasAnyRole("STUDENT", "ADMIN")
                         .requestMatchers("/api/trainers/me/attendance/**").hasAnyRole("TRAINER", "ADMIN")
-
-                        // Emploi du temps "me" (PDF) — aligne bien le chemin côté Front : /api/trainers/me/weekly-schedule.pdf
                         .requestMatchers("/api/trainers/me/weekly-schedule.pdf").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers("/api/students/me/weekly-schedule.pdf").hasAnyRole("STUDENT", "ADMIN")
-                        // Toute autre requête nécessite une auth
+
+                        // --- Tout le reste nécessite une authentification ---
                         .anyRequest().authenticated()
                 )
 
@@ -110,23 +114,18 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Front Angular en dev
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:4200",
                 "http://127.0.0.1:4200"
         ));
-
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-
-        // Expose pour récupération du nom de fichier, etc.
         configuration.setExposedHeaders(List.of(
                 "Content-Disposition",
                 "Authorization",
                 "Content-Type",
                 "Content-Length"
         ));
-
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

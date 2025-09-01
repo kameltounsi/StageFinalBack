@@ -15,4 +15,13 @@ public interface GroupeRepository extends JpaRepository<Groupe, Long> {
     /** Groupes où l’utilisateur est formateur */
     @Query("select distinct g from Groupe g join g.trainers t where t.id = :trainerId")
     List<Groupe> findByTrainers_Id(Long trainerId);
+    @Query("select distinct trim(lower(g.specialite)) from Groupe g where g.specialite is not null order by 1")
+    List<String> findDistinctSpecialites();
+
+    @Query("""
+           select g from Groupe g
+           where (:specialite is null or lower(trim(g.specialite)) = lower(trim(:specialite)))
+           order by g.nom asc
+           """)
+    List<Groupe> findBySpecialiteIgnoreCase(@Param("specialite") String specialite);
 }

@@ -4,8 +4,10 @@ package com.esprit.stageback.services;
 import com.esprit.stageback.dto.AdminAbsenceDetailItem;
 import com.esprit.stageback.dto.AdminAbsenceSummaryRow;
 import com.esprit.stageback.entities.Groupe;
+import com.esprit.stageback.entities.User;
 import com.esprit.stageback.repositories.GroupeRepository;
 import com.esprit.stageback.repositories.PresenceRepository;
+import com.esprit.stageback.repositories.UserRepository;
 import com.esprit.stageback.services.AdminAbsenceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +25,8 @@ public class AdminAbsenceServiceImpl implements AdminAbsenceService {
 
     private final GroupeRepository groupeRepo;
     private final PresenceRepository presenceRepo;
+    private final UserRepository userRepo;          // NEW
+    private final MailService mail;                 // NEW
 
     @Override
     public List<String> listSpecialites() {
@@ -77,4 +82,39 @@ public class AdminAbsenceServiceImpl implements AdminAbsenceService {
                         .build()
                 ).toList();
     }
-}
+    // ---------- NEW: alerts ----------
+
+    @Override
+    @Transactional
+    public void sendAlertToStudent(Long studentId, long minUnjustified) {
+        long unjustified = presenceRepo.countUnjustifiedByStudent(studentId);
+        if (unjustified <= minUnjustified) return;
+
+        var user = userRepo.findById(studentId)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found: " + studentId));
+
+        Map<String,Object> model = Map.of(
+                "studentName", user.getFullName(),
+                "unjustifiedCount", unjustified,
+                "portalUrl", "https://portal.fuselearning.tld", // change as needed
+                "reference", "ABS-" + studentId + "-" + System.currentTimeMillis(),
+                "adminContact", "administration@fuselearning.tld",
+                "footerNote", "Thank you for your prompt attention to this matter."
+        );
+
+        mail.sendHtml(user.getEmail(), "Attendance Alert – Fuse Learning", model);
+    }
+
+    @Override
+    @Transactional
+    public int sendBulkAlerts(String specialite, Long groupId, LocalDate start, LocalDate end, long minUnjustified) {
+        var rows = summary(specialite, groupId, start, end, "unjustified", "desc");
+        int sent = 0;
+        for (var r : rows) {
+            if (r.getUnjustifiedAbsences() > minUnjustified) {
+                sendAlertToStudent(r.getStudentId(), minUnjustified);
+                sent++;
+            }
+        }
+        return sent;
+    }}

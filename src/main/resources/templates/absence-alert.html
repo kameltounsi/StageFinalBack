@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="x-apple-disable-message-reformatting">
+    <meta name="color-scheme" content="light only">
+    <title>Absence Alert</title>
+    <style>
+        /* Responsive tweaks (kept minimal for client support) */
+        @media (max-width:600px){
+            .container{width:100%!important}
+            .px{padding-left:16px!important;padding-right:16px!important}
+            .py{padding-top:16px!important;padding-bottom:16px!important}
+            .h1{font-size:22px!important;line-height:28px!important}
+        }
+        /* Safe link colors in iOS Gmail */
+        a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important}
+    </style>
+</head>
+<body style="margin:0;padding:0;background:#f6f7fb;">
+<!-- Preheader (inbox preview text) -->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+    Attendance notice from <span th:text="${schoolName} ?: 'Fuse Learning'">Fuse Learning</span>.
+</div>
+
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f6f7fb;">
+    <tr>
+        <td align="center" style="padding:24px 12px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="680" class="container" style="width:680px;max-width:680px;border-radius:16px;overflow:hidden;box-shadow:0 8px 28px rgba(2,6,23,.08);background:#ffffff;">
+                <!-- Brand bar (no logo, text-only) -->
+                <tr>
+                    <td style="background:linear-gradient(90deg,#ede9fe,#e0e7ff);border-bottom:1px solid #e5e7eb;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td class="px" style="padding:18px 24px;font-family:Segoe UI,Roboto,Arial,sans-serif;">
+                                    <!-- Brand chip -->
+                                    <span style="display:inline-block;background:#ffffff;border:1px solid rgba(2,6,23,.08);padding:6px 12px;border-radius:999px;font-weight:700;font-size:14px;color:#111827;letter-spacing:.2px;">
+                      <span th:text="${schoolName} ?: 'Fuse Learning'">Fuse Learning</span>
+                    </span>
+                                    <!-- Optional slogan under brand (remove if not wanted) -->
+                                    <div style="margin-top:6px;font-size:12px;color:#475569;">
+                                        Student Success & Attendance
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Body -->
+                <tr>
+                    <td class="px py" style="padding:28px 24px 8px;font-family:Segoe UI,Roboto,Arial,sans-serif;color:#0f172a;">
+                        <!-- Badge -->
+                        <div style="display:inline-block;background:#fef3c7;border:1px solid #fde68a;color:#7c2d12;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;margin-bottom:12px;">
+                            Attendance Notice
+                        </div>
+
+                        <h1 class="h1"
+                            th:text="'Hello ' + (${studentName} ?: 'Student') + ','"
+                            style="margin:8px 0 14px;font-size:26px;line-height:32px;font-weight:800;color:#3b0764;">
+                            Hello Student,
+                        </h1>
+
+                        <p style="margin:10px 0;line-height:1.6;font-size:15px;color:#111827;">
+                            Our records indicate that you currently have
+                            <b th:text="${unjustifiedCount}">0</b> unjustified absence<span th:text="${unjustifiedCount} == 1 ? '' : 's'">s</span>.
+                        </p>
+
+                        <p style="margin:10px 0;line-height:1.6;font-size:15px;color:#111827;">
+                            Please visit the administration office at your earliest convenience to provide supporting documents and
+                            regularize your situation. If you believe this is a mistake, kindly contact us and we will review your case.
+                        </p>
+
+                        <!-- CTA (VML button for Outlook) -->
+                        <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:18px;">
+                            <tr>
+                                <td>
+                                    <!--[if mso]>
+                                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="[[${portalUrl} ?: 'https://example.com/portal']]]"
+                                      style="height:44px;v-text-anchor:middle;width:220px;" arcsize="18%" stroke="f" fillcolor="#2563eb">
+                                      <w:anchorlock/>
+                                      <center style="color:#ffffff;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:700;">
+                                        Open Student Portal
+                                      </center>
+                                    </v:roundrect>
+                                    <![endif]-->
+                                    <a th:href="${portalUrl} ?: 'https://example.com/portal'"
+                                       style="background:#2563eb;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:12px;
+                              font-weight:700;display:inline-block;font-size:14px;border:1px solid rgba(2,6,23,.1);">
+                                        Open Student Portal
+                                    </a>
+                                    <!--<![endif]-->
+                                </td>
+                            </tr>
+                        </table>
+
+                        <div style="margin-top:16px;font-size:12px;color:#64748b;">
+                            Ref: <span th:text="${reference} ?: 'N/A'">N/A</span>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Divider -->
+                <tr>
+                    <td style="padding:0 24px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:8px 0;"></td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                    <td class="px" style="padding:16px 24px 24px;background:#fafafa;font-family:Segoe UI,Roboto,Arial,sans-serif;">
+                        <div style="font-size:13px;color:#334155;margin-bottom:6px;">
+                            Contact: <span th:text="${adminContact} ?: 'administration@school.tld'">administration@school.tld</span>
+                        </div>
+                        <div style="font-size:12px;color:#64748b;" th:text="${footerNote} ?: 'Thank you for your prompt attention to this matter.'">
+                            Thank you for your prompt attention to this matter.
+                        </div>
+                        <!-- Unsubscribe / help line (optional) -->
+                        <div style="font-size:11px;color:#94a3b8;margin-top:10px;">
+                            You’re receiving this message because your institution uses <span th:text="${schoolName} ?: 'Fuse Learning'">Fuse Learning</span>.
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

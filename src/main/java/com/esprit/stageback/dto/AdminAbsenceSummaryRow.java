@@ -3,16 +3,17 @@ package com.esprit.stageback.dto;
 
 import lombok.*;
 
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class AdminAbsenceSummaryRow {
     private Long studentId;
     private String studentName;
     private String studentEmail;
-
     private Long groupId;
     private String groupName;
     private String specialite;
-
-    private long totalAbsences;        // ABSENT uniquement
-    private long unjustifiedAbsences;  // si tu utilises justified=false/null (sinon laisse 0)
+    private long totalAbsences;
+    private long unjustifiedAbsences;
 }

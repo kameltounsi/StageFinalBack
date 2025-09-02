@@ -1,20 +1,14 @@
+// src/main/java/com/esprit/stageback/repositories/NoteRepository.java
 package com.esprit.stageback.repositories;
 
 import com.esprit.stageback.entities.Note;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
-import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
-@Repository
 public interface NoteRepository extends JpaRepository<Note, Long> {
+    List<Note> findByEtudiant_IdInAndMatiere(List<Long> etudiantIds, String matiere);
 
-    // utilisé pour pré-remplir la feuille
-    List<Note> findByEtudiant_IdInAndDateAndMatiereIgnoreCase(
-            Collection<Long> etudiantIds,
-            LocalDate date,
-            String matiere
-    );
+    Optional<Note> findByEtudiant_IdAndMatiere(Long etudiantId, String matiere);
 }

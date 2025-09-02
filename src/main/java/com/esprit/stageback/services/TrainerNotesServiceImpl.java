@@ -1,3 +1,4 @@
+// src/main/java/com/esprit/stageback/services/TrainerNotesServiceImpl.java
 package com.esprit.stageback.services;
 
 import com.esprit.stageback.dto.GradeRow;
@@ -10,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,9 +28,28 @@ public class TrainerNotesServiceImpl implements TrainerNotesService {
         }
     }
 
+    private Double clamp20(Double v) {
+        if (v == null) return null;
+        return Math.max(0d, Math.min(20d, v));
+    }
+
+    private Double round2(Double v) {
+        if (v == null) return null;
+        return Math.round(v * 100.0) / 100.0;
+    }
+
+    private Double computeAverage(Double cc, Double exam, double wCc, double wExam) {
+        Double ccSafe = clamp20(cc);
+        Double exSafe = clamp20(exam);
+        if (ccSafe == null && exSafe == null) return null;
+        if (ccSafe == null) return round2(exSafe);
+        if (exSafe == null) return round2(ccSafe);
+        return round2(ccSafe * wCc + exSafe * wExam);
+    }
+
     @Override
     @Transactional(readOnly = true)
-    public List<GradeRow> loadSheet(String trainerEmail, Long groupeId, LocalDate date, String matiere) {
+    public List<GradeRow> loadSheet(String trainerEmail, Long groupeId, String matiere) {
         assertTrainerInGroup(trainerEmail, groupeId);
 
         // Étudiants du groupe
@@ -39,13 +58,13 @@ public class TrainerNotesServiceImpl implements TrainerNotesService {
 
         List<Long> studentIds = students.stream().map(User::getId).toList();
 
-        // Notes existantes
-        List<Note> existing = noteRepo.findByEtudiant_IdInAndDateAndMatiereIgnoreCase(studentIds, date, matiere);
+        // Notes existantes (par matière, sans date)
+        List<Note> existing = noteRepo.findByEtudiant_IdInAndMatiere(studentIds, matiere);
 
         Map<Long, Note> byStudent = existing.stream()
-                .collect(Collectors.toMap(n -> n.getEtudiant().getId(), n -> n, (a,b)->a));
+                .collect(Collectors.toMap(n -> n.getEtudiant().getId(), n -> n, (a, b) -> a));
 
-        // Feuille fusionnée
+        // Construire les lignes
         List<GradeRow> rows = new ArrayList<>(students.size());
         for (User s : students) {
             Note n = byStudent.get(s.getId());
@@ -53,7 +72,9 @@ public class TrainerNotesServiceImpl implements TrainerNotesService {
                     .studentId(s.getId())
                     .studentName(s.getFullName())
                     .studentEmail(s.getEmail())
-                    .valeur(n != null ? n.getValeur() : null)
+                    .cc(n != null ? n.getCc() : null)
+                    .examen(n != null ? n.getExamen() : null)
+                    .moyenne(n != null ? n.getMoyenne() : null)
                     .commentaire(n != null ? n.getCommentaire() : null)
                     .build());
         }
@@ -66,56 +87,51 @@ public class TrainerNotesServiceImpl implements TrainerNotesService {
         Objects.requireNonNull(payload, "payload is null");
         Objects.requireNonNull(payload.getGroupeId(), "groupeId is null");
         Objects.requireNonNull(payload.getMatiere(), "matiere is null");
-        Objects.requireNonNull(payload.getDate(), "date is null");
         if (payload.getItems() == null) payload.setItems(List.of());
 
         assertTrainerInGroup(trainerEmail, payload.getGroupeId());
 
-        // Récupérer tous les étudiants ciblés
+        // Pondérations (fallback 40/60) + normalisation
+        double wCc   = payload.getWeightCc()   != null ? payload.getWeightCc()   : 0.40;
+        double wExam = payload.getWeightExam() != null ? payload.getWeightExam() : 0.60;
+        if (Math.abs((wCc + wExam) - 1.0) > 1e-6) {
+            double sum = wCc + wExam;
+            if (sum <= 0) { wCc = 0.40; wExam = 0.60; }
+            else { wCc /= sum; wExam /= sum; }
+        }
+
+        // Charger les users visés pour préparer l'upsert
         List<Long> ids = payload.getItems().stream()
                 .map(SaveGradesRequest.Item::getStudentId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
 
+        Map<Long, User> users = new HashMap<>();
         if (!ids.isEmpty()) {
-            // Charger notes existantes
-            List<Note> existing = noteRepo.findByEtudiant_IdInAndDateAndMatiereIgnoreCase(
-                    ids, payload.getDate(), payload.getMatiere());
+            for (User u : userRepo.findAllById(ids)) users.put(u.getId(), u);
+        }
 
-            Map<Long, Note> byStudent = existing.stream()
-                    .collect(Collectors.toMap(n -> n.getEtudiant().getId(), n -> n, (a,b)->a));
+        // Upsert note par (studentId, matiere)
+        for (SaveGradesRequest.Item it : payload.getItems()) {
+            if (it.getStudentId() == null) continue;
+            User etu = users.get(it.getStudentId());
+            if (etu == null) continue;
 
-            // Map des Users (pour créer les nouvelles notes)
-            Map<Long, User> users = new HashMap<>();
-            if (!ids.isEmpty()) {
-                List<User> us = userRepo.findAllById(ids);
-                for (User u : us) users.put(u.getId(), u);
-            }
-
-            // Upsert
-            for (SaveGradesRequest.Item item : payload.getItems()) {
-                if (item.getStudentId() == null) continue;
-
-                Note note = byStudent.get(item.getStudentId());
-                if (note == null) {
-                    // créer
-                    User etu = users.get(item.getStudentId());
-                    if (etu == null) continue; // sécurité
-                    note = Note.builder()
+            Note note = noteRepo.findByEtudiant_IdAndMatiere(it.getStudentId(), payload.getMatiere())
+                    .orElseGet(() -> Note.builder()
                             .etudiant(etu)
                             .matiere(payload.getMatiere())
-                            .date(payload.getDate())
-                            .valeur(item.getValeur())
-                            .commentaire(item.getCommentaire())
-                            .build();
-                } else {
-                    // maj
-                    note.setValeur(item.getValeur());
-                    note.setCommentaire(item.getCommentaire());
-                }
-                noteRepo.save(note);
-            }
+                            .build());
+
+            note.setCc(it.getCc());
+            note.setExamen(it.getExamen());
+            note.setWeightCc(wCc);
+            note.setWeightExam(wExam);
+            note.setMoyenne(computeAverage(it.getCc(), it.getExamen(), wCc, wExam));
+            note.setCommentaire(it.getCommentaire());
+
+            noteRepo.save(note);
         }
     }
 }

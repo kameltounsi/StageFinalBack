@@ -114,6 +114,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/trainers/me/attendance/**").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers("/api/trainers/me/weekly-schedule.pdf").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers("/api/students/me/weekly-schedule.pdf").hasAnyRole("STUDENT", "ADMIN")
+                        .requestMatchers("/api/student/**").hasAnyRole("STUDENT","ADMIN")
 
                         // Tout le reste nécessite une authentification
                         .anyRequest().authenticated()

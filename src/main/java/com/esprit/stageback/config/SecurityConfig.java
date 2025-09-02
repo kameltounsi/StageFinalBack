@@ -61,13 +61,13 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
-                        // --- CORS preflight ---
+                        // Preflight CORS
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // --- Swagger public ---
+                        // Swagger public
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
 
-                        // --- Public endpoints (à adapter si besoin) ---
+                        // Endpoints publics (à adapter si besoin)
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/api/groups/**",
@@ -81,19 +81,41 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/plannings/groupe/*/pdf").permitAll()
 
-                        // --- Admin zone (NOUVEAU : protège toute l’API admin) ---
+                        // Zone ADMIN
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        // Optionnel : règles plus fines
                         .requestMatchers(HttpMethod.POST, "/api/admin/absences/alerts/**").hasRole("ADMIN")
 
-                        // --- Zones protégées existantes ---
+                        // ---- TRAINER : groupes + notes (singulier ET pluriel) ----
+                        // Mes groupes
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/trainer/my-groups",
+                                "/api/trainers/my-groups"
+                        ).hasAnyRole("TRAINER", "ADMIN")
+
+                        // Feuille de notes
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/trainer/notes/**",
+                                "/api/trainers/notes/**"
+                        ).hasAnyRole("TRAINER", "ADMIN")
+
+                        // Sauvegarde notes
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/trainer/notes/**",
+                                "/api/trainers/notes/**"
+                        ).hasAnyRole("TRAINER", "ADMIN")
+
+                        // (Option) Tolérer l'ancien chemin le temps de migrer le front :
+                        // .requestMatchers(HttpMethod.GET, "/api/notes/sheet").hasAnyRole("TRAINER","ADMIN")
+                        // .requestMatchers(HttpMethod.POST, "/api/notes/bulk").hasAnyRole("TRAINER","ADMIN")
+
+                        // Zones protégées existantes
                         .requestMatchers("/api/trainers/me/**").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers("/api/students/me/**").hasAnyRole("STUDENT", "ADMIN")
                         .requestMatchers("/api/trainers/me/attendance/**").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers("/api/trainers/me/weekly-schedule.pdf").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers("/api/students/me/weekly-schedule.pdf").hasAnyRole("STUDENT", "ADMIN")
 
-                        // --- Tout le reste nécessite une authentification ---
+                        // Tout le reste nécessite une authentification
                         .anyRequest().authenticated()
                 )
 
@@ -113,7 +135,6 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:4200",
                 "http://127.0.0.1:4200"

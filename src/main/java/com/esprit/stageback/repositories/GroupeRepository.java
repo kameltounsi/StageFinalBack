@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,4 +25,14 @@ public interface GroupeRepository extends JpaRepository<Groupe, Long> {
            order by g.nom asc
            """)
     List<Groupe> findBySpecialiteIgnoreCase(@Param("specialite") String specialite);
+    // For trainer groups list
+    List<Groupe> findByIdInOrderByNomAsc(Collection<Long> ids);
+
+    // Optional helper to fetch a student list of a group (if needed elsewhere)
+    @Query("""
+        select e from User e
+        where e.role = 'STUDENT' and e.studentGroupe.id = :groupeId
+        order by lower(e.fullName)
+    """)
+    List<com.esprit.stageback.entities.User> findStudentsOfGroup(Long groupeId);
 }

@@ -62,5 +62,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     where lower(u.email) = lower(:email)
 """)
     List<Long> findTrainerGroupIdsByEmailIgnoreCase(@Param("email") String email);
+    // ...
+    @Query("""
+           SELECT u FROM User u
+           WHERE u.role = 'STUDENT'
+             AND u.studentGroupe.id = :groupeId
+           ORDER BY LOWER(u.fullName) ASC
+           """)
+    List<User> findStudentsByGroupeId(@Param("groupeId") Long groupeId);
+// ...
 
 }

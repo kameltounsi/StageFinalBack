@@ -81,7 +81,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/plannings/groupe/*/pdf").permitAll()
 
-                        // Zone ADMIN
+                        // ---- ADMIN ----
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/admin/absences/alerts/**").hasRole("ADMIN")
 
@@ -92,29 +92,44 @@ public class SecurityConfig {
                                 "/api/trainers/my-groups"
                         ).hasAnyRole("TRAINER", "ADMIN")
 
-                        // Feuille de notes
+                        // Feuille de notes (lecture)
                         .requestMatchers(HttpMethod.GET,
                                 "/api/trainer/notes/**",
                                 "/api/trainers/notes/**"
                         ).hasAnyRole("TRAINER", "ADMIN")
 
-                        // Sauvegarde notes
+                        // Sauvegarde notes (écriture)
                         .requestMatchers(HttpMethod.POST,
                                 "/api/trainer/notes/**",
                                 "/api/trainers/notes/**"
                         ).hasAnyRole("TRAINER", "ADMIN")
 
-                        // (Option) Tolérer l'ancien chemin le temps de migrer le front :
-                        // .requestMatchers(HttpMethod.GET, "/api/notes/sheet").hasAnyRole("TRAINER","ADMIN")
-                        // .requestMatchers(HttpMethod.POST, "/api/notes/bulk").hasAnyRole("TRAINER","ADMIN")
+                        // ---- TRAINER : claims (inbox + décisions) ----
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/trainer/notes/claims/**"
+                        ).hasAnyRole("TRAINER", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH,
+                                "/api/trainer/notes/claims/**"
+                        ).hasAnyRole("TRAINER", "ADMIN")
 
-                        // Zones protégées existantes
-                        .requestMatchers("/api/trainers/me/**").hasAnyRole("TRAINER", "ADMIN")
+                        // ---- STUDENT : zone protégée + claims ----
                         .requestMatchers("/api/students/me/**").hasAnyRole("STUDENT", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/students/me/weekly-schedule.pdf").hasAnyRole("STUDENT", "ADMIN")
+
+                        .requestMatchers("/api/student/**").hasAnyRole("STUDENT", "ADMIN")
+                        // Mes notes: déjà couvert par /api/student/**
+                        // Mes claims (liste/soumission)
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/student/notes/claims/**"
+                        ).hasAnyRole("STUDENT", "ADMIN")
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/student/notes/claims/**"
+                        ).hasAnyRole("STUDENT", "ADMIN")
+
+                        // ---- TRAINER autres endpoints protégés existants ----
+                        .requestMatchers("/api/trainers/me/**").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers("/api/trainers/me/attendance/**").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers("/api/trainers/me/weekly-schedule.pdf").hasAnyRole("TRAINER", "ADMIN")
-                        .requestMatchers("/api/students/me/weekly-schedule.pdf").hasAnyRole("STUDENT", "ADMIN")
-                        .requestMatchers("/api/student/**").hasAnyRole("STUDENT","ADMIN")
 
                         // Tout le reste nécessite une authentification
                         .anyRequest().authenticated()
@@ -140,7 +155,8 @@ public class SecurityConfig {
                 "http://localhost:4200",
                 "http://127.0.0.1:4200"
         ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // ⬇️ Ajout PATCH
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of(
                 "Content-Disposition",

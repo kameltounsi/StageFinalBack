@@ -71,5 +71,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
            """)
     List<User> findStudentsByGroupeId(@Param("groupeId") Long groupeId);
 // ...
+@Query("""
+       select g.id from User u
+       join u.studentGroupe g
+       where u.id = :userId
+       """)
+Optional<Long> findStudentGroupIdByUserId(@Param("userId") Long userId);
 
 }

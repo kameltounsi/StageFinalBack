@@ -35,4 +35,5 @@ public interface GroupeRepository extends JpaRepository<Groupe, Long> {
         order by lower(e.fullName)
     """)
     List<com.esprit.stageback.entities.User> findStudentsOfGroup(Long groupeId);
+
 }

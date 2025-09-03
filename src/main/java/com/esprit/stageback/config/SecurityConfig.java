@@ -92,39 +92,33 @@ public class SecurityConfig {
                                 "/api/trainers/my-groups"
                         ).hasAnyRole("TRAINER", "ADMIN")
 
-                        // Feuille de notes (lecture)
+                        // Feuille de notes (lecture/écriture)
                         .requestMatchers(HttpMethod.GET,
                                 "/api/trainer/notes/**",
                                 "/api/trainers/notes/**"
                         ).hasAnyRole("TRAINER", "ADMIN")
-
-                        // Sauvegarde notes (écriture)
                         .requestMatchers(HttpMethod.POST,
                                 "/api/trainer/notes/**",
                                 "/api/trainers/notes/**"
                         ).hasAnyRole("TRAINER", "ADMIN")
 
-                        // ---- TRAINER : claims (inbox + décisions) ----
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/trainer/notes/claims/**"
-                        ).hasAnyRole("TRAINER", "ADMIN")
-                        .requestMatchers(HttpMethod.PATCH,
-                                "/api/trainer/notes/claims/**"
-                        ).hasAnyRole("TRAINER", "ADMIN")
+                        // Claims trainer
+                        .requestMatchers(HttpMethod.GET,   "/api/trainer/notes/claims/**").hasAnyRole("TRAINER", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/trainer/notes/claims/**").hasAnyRole("TRAINER", "ADMIN")
 
-                        // ---- STUDENT : zone protégée + claims ----
+                        // ---- TRAINER : COURSES (upload/list/presign/delete)
+                        .requestMatchers("/api/trainer/courses/**").hasAnyRole("TRAINER", "ADMIN")
+
+                        // ---- STUDENT zone protégée ----
                         .requestMatchers("/api/students/me/**").hasAnyRole("STUDENT", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/students/me/weekly-schedule.pdf").hasAnyRole("STUDENT", "ADMIN")
 
+                        // Règle générale student (couvre notes/claims/planning…)
                         .requestMatchers("/api/student/**").hasAnyRole("STUDENT", "ADMIN")
-                        // Mes notes: déjà couvert par /api/student/**
-                        // Mes claims (liste/soumission)
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/student/notes/claims/**"
-                        ).hasAnyRole("STUDENT", "ADMIN")
-                        .requestMatchers(HttpMethod.POST,
-                                "/api/student/notes/claims/**"
-                        ).hasAnyRole("STUDENT", "ADMIN")
+
+                        // Claims student (explicitées pour clarté)
+                        .requestMatchers(HttpMethod.GET,  "/api/student/notes/claims/**").hasAnyRole("STUDENT", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/student/notes/claims/**").hasAnyRole("STUDENT", "ADMIN")
 
                         // ---- TRAINER autres endpoints protégés existants ----
                         .requestMatchers("/api/trainers/me/**").hasAnyRole("TRAINER", "ADMIN")
@@ -155,7 +149,6 @@ public class SecurityConfig {
                 "http://localhost:4200",
                 "http://127.0.0.1:4200"
         ));
-        // ⬇️ Ajout PATCH
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of(

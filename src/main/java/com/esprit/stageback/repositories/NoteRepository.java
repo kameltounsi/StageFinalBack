@@ -28,4 +28,8 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
              and lower(n.matiere) in :matieres
            """)
     List<Note> findByStudentIdsAndMatieresIgnoreCase(Collection<Long> ids, Collection<String> matieres);
+
+    // NEW: purge all notes for given students
+    long deleteByEtudiant_IdIn(Collection<Long> ids);
+
 }

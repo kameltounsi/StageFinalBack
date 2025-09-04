@@ -9,6 +9,10 @@ public class AdminApplyResultsResponse {
     private Long targetGroupId;
     private String targetGroupName;
 
-    private long movedCount;     // nombre d'étudiants promus
-    private long stayedCount;    // refusés (ou incomplets)
+    private long movedCount;          // promoted
+    private long stayedCount;         // remained in source group
+
+    // NEW: what we purged right after publishing results
+    private long purgedNotesCount;
+    private long purgedClaimsCount;
 }

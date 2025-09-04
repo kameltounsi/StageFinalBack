@@ -1,7 +1,6 @@
 package com.esprit.stageback.repositories;
 
-
-
+import com.esprit.stageback.dto.TrainerDTO;
 import com.esprit.stageback.entities.Roles;
 import com.esprit.stageback.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,11 +10,14 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
+
     Optional<User> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
     @Query("select u.id from User u where lower(u.email) = lower(:email)")
     Optional<Long> findIdByEmailIgnoreCase(@Param("email") String email);
 
@@ -23,6 +25,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("select u.fullName from User u where u.id = :id")
     Optional<String> findFullNameById(@Param("id") Long id);
+
     @Query("""
            SELECT u FROM User u
            WHERE u.role = 'STUDENT'
@@ -48,21 +51,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT t FROM User t JOIN t.trainerGroupes g WHERE g.id = :groupeId")
     List<User> findTrainersByGroupeId(@Param("groupeId") Long groupeId);
-    // NEW: fetch the student's group id (assumes User has a ManyToOne<Group> groupe)
+
     @Query("""
         select g.id from User u
         join u.studentGroupe g
         where lower(u.email) = lower(:email)
     """)
     Optional<Long> findGroupIdByEmailIgnoreCase(@Param("email") String email);
-    // src/main/java/com/esprit/stageback/repositories/UserRepository.java
+
     @Query("""
-    select g.id from User u
-    join u.trainerGroupes g
-    where lower(u.email) = lower(:email)
-""")
+        select g.id from User u
+        join u.trainerGroupes g
+        where lower(u.email) = lower(:email)
+    """)
     List<Long> findTrainerGroupIdsByEmailIgnoreCase(@Param("email") String email);
-    // ...
+
     @Query("""
            SELECT u FROM User u
            WHERE u.role = 'STUDENT'
@@ -70,18 +73,36 @@ public interface UserRepository extends JpaRepository<User, Long> {
            ORDER BY LOWER(u.fullName) ASC
            """)
     List<User> findStudentsByGroupeId(@Param("groupeId") Long groupeId);
-// ...
-@Query("""
+
+    @Query("""
        select g.id from User u
        join u.studentGroupe g
        where u.id = :userId
        """)
-Optional<Long> findStudentGroupIdByUserId(@Param("userId") Long userId);
+    Optional<Long> findStudentGroupIdByUserId(@Param("userId") Long userId);
+
     @Query("""
         select g.id from User u
         join u.studentGroupe g
         where lower(u.email) = lower(:email)
     """)
     Optional<Long> findStudentGroupIdByEmail(@Param("email") String email);
+    // src/main/java/com/esprit/stageback/repositories/UserRepository.java
+    @Query("""
+       select distinct lower(trim(u.specialite))
+       from User u
+       where u.role = 'TRAINER'
+         and u.specialite is not null
+         and trim(u.specialite) <> ''
+       order by lower(trim(u.specialite)) asc
+       """)
+    List<String> findDistinctTrainerSpecialites();
 
+    @Query("""
+       select new com.esprit.stageback.dto.TrainerDTO(u.id, u.fullName, u.email, u.specialite)
+       from User u
+       where u.role = 'TRAINER'
+       order by lower(u.fullName)
+       """)
+    List<com.esprit.stageback.dto.TrainerDTO> findAllTrainerSummaries();
 }

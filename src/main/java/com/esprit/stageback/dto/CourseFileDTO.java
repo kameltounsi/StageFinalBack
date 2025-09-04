@@ -1,20 +1,27 @@
 // src/main/java/com/esprit/stageback/dto/CourseFileDTO.java
 package com.esprit.stageback.dto;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Value;
+
 import java.time.Instant;
 
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Value
+@Builder
 public class CourseFileDTO {
-    private Long id;
-    private String title;
-    private String contentType;
-    private long sizeBytes;
-    private Instant createdAt;
+    Long id;
+    String title;
+    String contentType;
+    Long sizeBytes;
+    Instant createdAt;
 
-    private Long groupeId;
-    private String groupeName;
-    private String subject;
+    Long groupeId;
+    String groupeName;
 
-    private String presignedUrl; // rempli au besoin
+    String subject;
+
+    // NEW: pour affichage “Trainer”
+    Long trainerId;
+    String trainerEmail;
+    String presignedUrl; // rempli au besoin
 }

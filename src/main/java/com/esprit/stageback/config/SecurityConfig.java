@@ -135,6 +135,7 @@ public class SecurityConfig {
                         // Claims student (explicitation)
                         .requestMatchers(HttpMethod.GET,  "/api/student/notes/claims/**").hasAnyRole("STUDENT","ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/student/notes/claims/**").hasAnyRole("STUDENT","ADMIN")
+                        .requestMatchers("/api/users/me/**").hasAnyRole("STUDENT","TRAINER","ADMIN")
 
                         // Tout le reste → authentifié
                         .anyRequest().authenticated()

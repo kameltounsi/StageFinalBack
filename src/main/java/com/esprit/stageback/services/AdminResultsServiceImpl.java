@@ -160,7 +160,6 @@ public class AdminResultsServiceImpl implements AdminResultsService {
                 .suggestedNextGroupId(nextId.orElse(null))
                 .build();
     }
-
     @Override
     @Transactional
     public AdminApplyResultsResponse applyGroupResults(AdminApplyResultsRequest req) {
@@ -211,6 +210,13 @@ public class AdminResultsServiceImpl implements AdminResultsService {
         final long purgedClaims = allStudentIds.isEmpty() ? 0L : claimRepo.deleteByStudent_IdIn(allStudentIds);
         final long purgedNotes  = allStudentIds.isEmpty() ? 0L : noteRepo.deleteByEtudiant_IdIn(allStudentIds);
 
+        // === NEW: increase target group's capacity by number of promoted students ===
+        // This lets the target class accept *additional* new students on top of the promoted ones.
+        final int capBefore = target.getStudentCapacity();
+        final int capAfter  = capBefore + (int) moved;
+        target.setStudentCapacity(capAfter);
+        groupeRepo.save(target); // persists capacity change within same TX
+
         return AdminApplyResultsResponse.builder()
                 .sourceGroupId(prev.getGroupId())
                 .targetGroupId(target.getId())
@@ -219,9 +225,10 @@ public class AdminResultsServiceImpl implements AdminResultsService {
                 .stayedCount(stayed)
                 .purgedNotesCount(purgedNotes)
                 .purgedClaimsCount(purgedClaims)
+                .targetCapacityBefore(capBefore)   // NEW
+                .targetCapacityAfter(capAfter)     // NEW
                 .build();
     }
-
     // ===== Helpers =====
 
     private static Double round2(Double v) {

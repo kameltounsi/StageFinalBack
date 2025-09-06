@@ -38,5 +38,26 @@ public interface GroupeRepository extends JpaRepository<Groupe, Long> {
 
     Optional<Groupe> findBySpecialiteIgnoreCaseAndNomIgnoreCase(String specialite, String nom);
     long countByStudentCapacityLessThanEqual(int value);
+    // Groups taught by trainer (by email)
+    @Query("""
+        select g from User u
+        join u.trainerGroupes g
+        where lower(u.email) = lower(:email)
+        order by lower(g.nom)
+    """)
+    List<Groupe> findGroupsForTrainerEmail(@Param("email") String email);
 
+    // If you need a flat row for quick list:
+    @Query("""
+        select g.id from User u
+        join u.trainerGroupes g
+        where lower(u.email) = lower(:email)
+        order by g.id
+    """)
+    List<Long> findGroupIdsForTrainerEmail(@Param("email") String email);
+    @Query("select g from Groupe g " +
+            "where lower(g.specialite) = lower(:spec) " +
+            "and (lower(g.nom) like lower(concat(:base, '%')))")
+    List<Groupe> findBySpecialiteAndBaseNom(@Param("spec") String specialite,
+                                            @Param("base") String baseNom);
 }

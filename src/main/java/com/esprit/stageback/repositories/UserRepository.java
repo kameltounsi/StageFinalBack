@@ -139,4 +139,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 """)
     List<com.esprit.stageback.dto.SpecialiteCountDTO> countStudentsBySpecialite();
 
+    @Query("select u from User u " +
+            "where u.role = com.esprit.stageback.entities.Roles.STUDENT " +
+            "and lower(u.specialite) = lower(:spec)")
+    List<User> findStudentsBySpecialite(@Param("spec") String specialite);
 }

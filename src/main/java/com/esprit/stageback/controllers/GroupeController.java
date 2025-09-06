@@ -5,6 +5,7 @@ import com.esprit.stageback.entities.User;
 import com.esprit.stageback.repositories.GroupeRepository;
 import com.esprit.stageback.repositories.UserRepository;
 import com.esprit.stageback.services.GroupeService;
+import com.esprit.stageback.services.GroupeServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,21 +24,18 @@ public class GroupeController {
     @PostMapping("/add")
     public ResponseEntity<Groupe> addGroup(
             @RequestParam String specialite,
-            @RequestParam String niveau, // keep "niveau" since your service expects it
+            @RequestParam String niveau,
             @RequestParam(required = false) List<Long> trainerIds,
             @RequestParam(required = false) List<Long> studentIds) {
-
         Groupe groupe = groupeService.createGroup(specialite, niveau, trainerIds, studentIds);
         return ResponseEntity.ok(groupe);
     }
 
-    // ---- SINGLE listing endpoint (avoid duplicate /api/groups GET)
     @GetMapping
     public ResponseEntity<List<Groupe>> getAll() {
         return ResponseEntity.ok(groupeService.getAllGroups());
     }
 
-    // ---- SINGLE by-id endpoint (avoid duplicate /api/groups/{id} GET)
     @GetMapping("/{id}")
     public ResponseEntity<Groupe> getById(@PathVariable Long id) {
         return groupeRepository.findById(id)
@@ -51,21 +49,15 @@ public class GroupeController {
         return ResponseEntity.noContent().build();
     }
 
-    // Filter by specialité + level (note: your addGroup uses "niveau"; here you used "level")
-    // Keep API stable: either rename param to "niveau" or convert inside service.
     @GetMapping("/by-specialite")
     public ResponseEntity<List<Groupe>> getGroupsBySpecialiteAndLevel(
             @RequestParam String specialite,
-            @RequestParam(name = "level") String niveau // map "level" -> "niveau"
-    ) {
+            @RequestParam(name = "level") String niveau) {
         return ResponseEntity.ok(groupeService.findGroupsBySpecialiteAndLevel(specialite, niveau));
     }
 
     @PostMapping("/{groupId}/add-student/{studentId}")
-    public ResponseEntity<?> addStudentToGroup(
-            @PathVariable Long groupId,
-            @PathVariable Long studentId) {
-
+    public ResponseEntity<?> addStudentToGroup(@PathVariable Long groupId, @PathVariable Long studentId) {
         Groupe group = groupeRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
         User student = userRepository.findById(studentId)
@@ -88,10 +80,7 @@ public class GroupeController {
     }
 
     @PostMapping("/{groupId}/add-trainer/{trainerId}")
-    public ResponseEntity<Map<String, String>> addTrainerToGroup(
-            @PathVariable Long groupId,
-            @PathVariable Long trainerId) {
-
+    public ResponseEntity<Map<String, String>> addTrainerToGroup(@PathVariable Long groupId, @PathVariable Long trainerId) {
         Groupe group = groupeRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
         User trainer = userRepository.findById(trainerId)
@@ -122,20 +111,13 @@ public class GroupeController {
     }
 
     @DeleteMapping("/{groupId}/remove-student/{studentId}")
-    public ResponseEntity<?> removeStudentFromGroup(
-            @PathVariable Long groupId,
-            @PathVariable Long studentId) {
-
+    public ResponseEntity<?> removeStudentFromGroup(@PathVariable Long groupId, @PathVariable Long studentId) {
         Groupe group = groupeRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
-        group.setStudents(
-                group.getStudents().stream()
-                        .filter(s -> !s.getId().equals(studentId))
-                        .toList()
-        );
+        group.setStudents(group.getStudents().stream().filter(s -> !s.getId().equals(studentId)).toList());
         group.setStudentCapacity(group.getStudentCapacity() + 1);
 
         student.setStudentGroupe(null);
@@ -146,20 +128,13 @@ public class GroupeController {
     }
 
     @DeleteMapping("/{groupId}/remove-trainer/{trainerId}")
-    public ResponseEntity<?> removeTrainerFromGroup(
-            @PathVariable Long groupId,
-            @PathVariable Long trainerId) {
-
+    public ResponseEntity<?> removeTrainerFromGroup(@PathVariable Long groupId, @PathVariable Long trainerId) {
         Groupe group = groupeRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
         User trainer = userRepository.findById(trainerId)
                 .orElseThrow(() -> new RuntimeException("Trainer not found"));
 
-        group.setTrainers(
-                group.getTrainers().stream()
-                        .filter(t -> !t.getId().equals(trainerId))
-                        .toList()
-        );
+        group.setTrainers(group.getTrainers().stream().filter(t -> !t.getId().equals(trainerId)).toList());
         group.setTrainerCapacity(group.getTrainerCapacity() + 1);
 
         if (trainer.getTrainerGroupes() != null) {
@@ -179,5 +154,16 @@ public class GroupeController {
     @GetMapping("/available-trainers")
     public ResponseEntity<List<User>> getAvailableTrainers(@RequestParam String specialite) {
         return ResponseEntity.ok(userRepository.findAvailableTrainersBySpecialite(specialite));
+    }
+
+    // 🔀 Random Affect (RESET complet)
+    @PostMapping("/random-assign")
+    public ResponseEntity<GroupeServiceImpl.RandomAffectReport> randomAssign(
+            @RequestParam String specialite,
+            @RequestParam String level,
+            @RequestParam(required = false, defaultValue = "true") boolean wipe) {
+        // wipe est ignoré ici car la méthode fait déjà un reset total (notes + présences).
+        var report = groupeService.randomAssignStudents(specialite, level);
+        return ResponseEntity.ok(report);
     }
 }

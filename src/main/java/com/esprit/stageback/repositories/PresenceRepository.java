@@ -124,4 +124,7 @@ public interface PresenceRepository extends JpaRepository<Presence, Long>, JpaSp
             @Param("end") LocalDate end
     );
 
+    @Modifying
+    @Query("delete from Presence p where p.etudiant.id in :ids")
+    void deleteByEtudiantIds(@Param("ids") List<Long> studentIds);
 }

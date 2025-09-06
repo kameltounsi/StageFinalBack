@@ -3,7 +3,9 @@ package com.esprit.stageback.repositories;
 
 import com.esprit.stageback.entities.Note;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
@@ -31,5 +33,7 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
 
     // NEW: purge all notes for given students
     long deleteByEtudiant_IdIn(Collection<Long> ids);
-
+    @Modifying
+    @Query("delete from Note n where n.etudiant.id in :ids")
+    void deleteByEtudiantIds(@Param("ids") List<Long> studentIds);
 }

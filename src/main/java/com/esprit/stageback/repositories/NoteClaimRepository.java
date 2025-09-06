@@ -13,5 +13,6 @@ public interface NoteClaimRepository extends JpaRepository<NoteClaim, Long> {
     List<NoteClaim> findByTutor_EmailIgnoreCaseOrderByCreatedAtDesc(String email);
     List<NoteClaim> findByStatusOrderByCreatedAtDesc(NoteClaimStatus status);
     long deleteByStudent_IdIn(Collection<Long> studentIds);
+    long countByStudent_StudentGroupe_Id(Long groupId);
 
 }

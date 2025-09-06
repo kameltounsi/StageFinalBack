@@ -1,6 +1,5 @@
 package com.esprit.stageback.repositories;
 
-import com.esprit.stageback.dto.TrainerDTO;
 import com.esprit.stageback.entities.Roles;
 import com.esprit.stageback.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -87,16 +86,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
         where lower(u.email) = lower(:email)
     """)
     Optional<Long> findStudentGroupIdByEmail(@Param("email") String email);
-    // src/main/java/com/esprit/stageback/repositories/UserRepository.java
-    @Query("""
-       select distinct lower(trim(u.specialite))
-       from User u
-       where u.role = 'TRAINER'
-         and u.specialite is not null
-         and trim(u.specialite) <> ''
-       order by lower(trim(u.specialite)) asc
-       """)
-    List<String> findDistinctTrainerSpecialites();
 
     @Query("""
        select new com.esprit.stageback.dto.TrainerDTO(u.id, u.fullName, u.email, u.specialite)
@@ -105,4 +94,49 @@ public interface UserRepository extends JpaRepository<User, Long> {
        order by lower(u.fullName)
        """)
     List<com.esprit.stageback.dto.TrainerDTO> findAllTrainerSummaries();
+    long countByRole(Roles role);
+    long countByRoleAndStudentGroupeIsNull(Roles role);
+    long countByStudentGroupe_Id(Long groupId);
+    @Query("""
+           SELECT DISTINCT u
+           FROM User u
+           LEFT JOIN FETCH u.trainerGroupes
+           WHERE u.role = 'TRAINER'
+           """)
+    List<User> findAllTrainersWithGroups();
+    // List distinct trainer specialités (you already have this)
+    @Query("""
+   select distinct lower(trim(u.specialite))
+   from User u
+   where u.role = 'TRAINER'
+     and u.specialite is not null
+     and trim(u.specialite) <> ''
+   order by lower(trim(u.specialite)) asc
+""")
+    List<String> findDistinctTrainerSpecialites();
+
+    // NEW: fetch trainers with their groups for a given specialité
+    @Query("""
+   select distinct u from User u
+   left join fetch u.trainerGroupes tg
+   where u.role = 'TRAINER'
+     and lower(trim(u.specialite)) = lower(trim(:specialite))
+   order by lower(u.fullName)
+""")
+
+    List<User> findTrainersWithGroupsBySpecialite(@Param("specialite") String specialite);
+    @Query("""
+   select new com.esprit.stageback.dto.SpecialiteCountDTO(
+       lower(trim(u.specialite)),
+       count(u)
+   )
+   from User u
+   where u.role = 'STUDENT'
+     and u.specialite is not null
+     and trim(u.specialite) <> ''
+   group by lower(trim(u.specialite))
+   order by lower(trim(u.specialite))
+""")
+    List<com.esprit.stageback.dto.SpecialiteCountDTO> countStudentsBySpecialite();
+
 }

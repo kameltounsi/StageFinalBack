@@ -37,4 +37,6 @@ public interface GroupeRepository extends JpaRepository<Groupe, Long> {
     List<com.esprit.stageback.entities.User> findStudentsOfGroup(Long groupeId);
 
     Optional<Groupe> findBySpecialiteIgnoreCaseAndNomIgnoreCase(String specialite, String nom);
+    long countByStudentCapacityLessThanEqual(int value);
+
 }
